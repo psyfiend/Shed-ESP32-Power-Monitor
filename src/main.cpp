@@ -16,7 +16,6 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // --- State Tracking Variables ---
-// Simplified state machine for the Power Monitor
 LightsSubMode currentLightsSubMode = LIVE_STATUS;
 DisplayMode currentMode = POWER_MODE_ALL;
 PowerSubMode currentPowerSubMode = LIVE_POWER;
@@ -47,6 +46,8 @@ void handle_input();
 void handle_lights_input(int encoderChange, bool buttonPressed);
 void handle_power_input(int encoderChange, bool buttonPressed);
 void handle_light_state_update(String message);
+void handle_motion_timer_command(String message);
+void handle_manual_timer_command(String message);
 
 
 void setup() {
@@ -88,6 +89,7 @@ void loop() {
   // Inactivity timer to reset the view
   if (millis() - lastUserActivityTime > INACTIVITY_TIMEOUT) {
     currentMode = POWER_MODE_ALL;
+    currentLightsSubMode = LIVE_STATUS;
     currentPowerSubMode = LIVE_POWER;
   }
 
@@ -206,10 +208,13 @@ void handle_lights_input(int encoderChange, bool buttonPressed) {
         break;
       case LIGHTS_MENU:
         switch (lightsMenuSelection) {
-            case 0:
-              if (lightIsOn) handle_light_state_update("OFF");
-              else handle_light_state_update("ON");
+            case 0:   // Turn light On/Off
+              if (lightIsOn) {
+                client.publish(MQTT_TOPIC_LIGHT_COMMAND, "OFF");
+              } else {
+                client.publish(MQTT_TOPIC_LIGHT_COMMAND, "ON");
               break;
+              }
             case 1:
               tempMotionTimerDuration = MOTION_TIMER_DURATION;
               currentLightsSubMode = EDIT_MOTION_TIMER;
@@ -259,10 +264,7 @@ void handle_power_input(int encoderChange, bool buttonPressed) {
   }
 }
 
-// --- NEW: MQTT Command Handlers ---
-// This device no longer has a handle_lights_mode(). Instead, it has handlers
-// for incoming MQTT messages to keep its display in sync.
-
+// --- This function is now purely for updating the UI state
 void handle_light_state_update(String message) {
     message.toUpperCase();
     if (message == "ON") {
@@ -270,9 +272,11 @@ void handle_light_state_update(String message) {
             lightOnTime = millis();
         }
         lightIsOn = true;
-    } else if (message == "OFF") {
+    } else {
         lightIsOn = false;
     }
+    Serial.print("Received light state update: ");
+    Serial.println(message);
 } 
 
 void handle_motion_timer_command(String message) {

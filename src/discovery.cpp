@@ -12,7 +12,7 @@ void mqtt_discovery() {
     JsonDocument discovery_doc;
     const char* discovery_topic = "homeassistant/device/shed_power_monitor/config"; // Unique topic for this device
 
-    // Device information
+    // Device document
     JsonObject device_doc = discovery_doc["device"].to<JsonObject>();
     device_doc["name"] = "Shed Solar Monitor";
     device_doc["ids"] = DEVICE_ID;  // shed_solar_power_monitor
@@ -20,6 +20,7 @@ void mqtt_discovery() {
     device_doc["mdl"] = "ESP32 Solar Core";
     device_doc["suggested_area"] = "Shed";
 
+    // Origin document
     JsonObject origin_doc = discovery_doc["o"].to<JsonObject>();
     origin_doc["name"] = "Psyki + Gem 100 years";
     origin_doc["sw"] = "0.1";
@@ -27,7 +28,7 @@ void mqtt_discovery() {
 
     JsonObject cmps_doc = discovery_doc["cmps"].to<JsonObject>();
 
-    // Motion Timer
+    // Motion activated light timer
     JsonObject motion_timer_cmp = cmps_doc["shed_light_motion_timer"].to<JsonObject>();
     motion_timer_cmp["name"] = "Shed Motion Timer";
     motion_timer_cmp["p"] = "number";
@@ -41,7 +42,7 @@ void mqtt_discovery() {
     motion_timer_cmp["cmd_t"] = "~/set";                        // shed/light/motion_timer/set
     motion_timer_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;       // shed/solar_monitor/availability
 
-    // Manual override Timer
+    // Manual override light timer
     JsonObject manual_timer_cmp = cmps_doc["shed_light_override_timer"].to<JsonObject>();
     manual_timer_cmp["name"] = "Shed Override Timer";
     manual_timer_cmp["p"] = "number";
@@ -174,7 +175,7 @@ void mqtt_discovery() {
     power_ch2_e_in_cmp["dev_cla"] = "energy";
     power_ch2_e_in_cmp["unit_of_meas"] = "Wh";
     power_ch2_e_in_cmp["stat_cla"] = "total_increasing";
-    power_ch2_e_in_cmp["val_tpl"] = "{{ value_json.total_energy_charged }}";
+    power_ch2_e_in_cmp["val_tpl"] = "{{ value_json.total_energy_charge_wh }}";
     power_ch2_e_in_cmp["uniq_id"] = "shed_solar_monitor_ch2_energy_in";
     power_ch2_e_in_cmp["object_id"] = "shed_battery_energy_charged";
     power_ch2_e_in_cmp["ic"] = "mdi:battery-arrow-up";
@@ -190,7 +191,7 @@ void mqtt_discovery() {
     power_ch2_e_out_cmp["dev_cla"] = "energy";
     power_ch2_e_out_cmp["unit_of_meas"] = "Wh";
     power_ch2_e_out_cmp["stat_cla"] = "total_increasing";
-    power_ch2_e_out_cmp["val_tpl"] = "{{ value_json.total_energy_discharged }}";
+    power_ch2_e_out_cmp["val_tpl"] = "{{ value_json.total_energy_discharge_wh }}";
     power_ch2_e_out_cmp["uniq_id"] = "shed_solar_monitor_ch2_energy_out";
     power_ch2_e_out_cmp["object_id"] = "shed_battery_energy_discharged";
     power_ch2_e_out_cmp["ic"] = "mdi:battery-arrow-down";

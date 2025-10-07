@@ -42,7 +42,7 @@ const char* WIFI_PASSWORD = "seamosss";
 const char* MQTT_SERVER = "192.168.0.70";
 const char* MQTT_USER = "mqtt_user";
 const char* MQTT_PASSWORD = "mqtt_user3700";
-const char* DEVICE_ID = "shed_solar_power_monitor";
+const char* DEVICE_ID = "shed_solar_monitor";
 
 // --- Power Monitor ---
 const uint8_t INA226_CH1_ADDRESS = 0x40; // Solar Panel
@@ -62,20 +62,18 @@ const int DISPLAY_UPDATE_INTERVAL = 100;
 // --- MQTT Topics ---
 // const char* MQTT_BASE_TOPIC = "shed/solar_monitor";
 const char* MQTT_TOPIC_AVAILABILITY = "shed/solar_monitor/availability";
-// const char* MQTT_TOPIC_MOTION_STATE = "shed/monitor/motion/state";       // Physical PIR sensor state
-// const char* MQTT_TOPIC_OCCUPANCY_STATE = "shed/monitor/occupancy/state"; // Software-based occupancy state (based on timer)
-// const char* MQTT_TOPIC_LIGHT_STATE = "shed/monitor/light/state";         // Physical light state
-// const char* MQTT_TOPIC_LIGHT_COMMAND = "shed/monitor/light/switch";      // Command to control the light state
-// const char* MQTT_TOPIC_LUX_STATE = "shed/monitor/lux/state";             // Ambient light sensor state
+// const char* MQTT_TOPIC_MOTION_STATE = "shed/motion/state";       // Physical PIR sensor state
+// const char* MQTT_TOPIC_OCCUPANCY_STATE = "shed/occupancy/state"; // Software-based occupancy state (based on timer)
+const char* MQTT_TOPIC_LIGHT_STATE = "shed/light/state";         // Physical light state
+const char* MQTT_TOPIC_LIGHT_COMMAND = "shed/light/switch";      // Command to control the light state
+// const char* MQTT_TOPIC_LUX_STATE = "shed/lux/state";             // Ambient light sensor state
 
 // --- Base Topics for MQTT Discovery ---
-// const char* MQTT_TOPIC_LIGHT_BASE = "shed/monitor/light";
+// const char* MQTT_TOPIC_LIGHT_BASE = "shed/light";
 const char* MQTT_TOPIC_LIGHT_MOTION_TIMER_BASE = "shed/light/motion_timer";
 const char* MQTT_TOPIC_LIGHT_MANUAL_TIMER_BASE = "shed/light/manual_timer";
 const char* MQTT_TOPIC_POWER_CH1_STATE = "shed/solar_monitor/panel";
 const char* MQTT_TOPIC_POWER_CH2_STATE = "shed/solar_monitor/battery";
-// const char* MQTT_TOPIC_POWER_CH2_ENERGY_IN_STATE = "shed/solar_monitor/battery/energy_in";
-// const char* MQTT_TOPIC_POWER_CH2_ENERGY_OUT_STATE = "shed/solar_monitor/battery/energy_out";
 const char* MQTT_TOPIC_POWER_CH3_STATE = "shed/solar_monitor/load";
 
 // --- Topics for functions to address
