@@ -59,32 +59,54 @@ extern const int NUM_MODES;
 extern const unsigned long INACTIVITY_TIMEOUT;
 extern const int DISPLAY_UPDATE_INTERVAL;
 
-// --- MQTT Topics ---
-// extern const char* MQTT_BASE_TOPIC;
-extern const char* MQTT_TOPIC_AVAILABILITY;
-// extern const char* MQTT_TOPIC_MOTION_STATE;    // For the physical PIR sensor
-// extern const char* MQTT_TOPIC_OCCUPANCY_STATE; // For the software timer
-extern const char* MQTT_TOPIC_LIGHT_STATE;      // For the physical light state
-extern const char* MQTT_TOPIC_LIGHT_COMMAND;    // For commands to control the light
-// extern const char* MQTT_TOPIC_LUX_STATE;       // For ambient light sensor state
+// --- Grand Unified MQTT Topics ---
 
-// --- Base Topics for MQTT Discovery ---
-// extern const char* MQTT_TOPIC_LIGHT_BASE;       // shed/monitor/light
-extern const char* MQTT_TOPIC_LIGHT_MOTION_TIMER_BASE;  // shed/monitor/light/motion_timer"
-extern const char* MQTT_TOPIC_LIGHT_MANUAL_TIMER_BASE;  // shed/monitor/light/manual_timer"
-extern const char* MQTT_TOPIC_POWER_CH1_STATE;     // shed/monitor/power/panel
-extern const char* MQTT_TOPIC_POWER_CH2_STATE;     // shed/monitor/power/battery
-extern const char* MQTT_TOPIC_POWER_CH3_STATE;     // shed/monitor/power/load
+// --- Base Topics for Discovery Payloads ---
+extern const char* MQTT_BASE_TOPIC_LIGHT;
+extern const char* MQTT_BASE_TOPIC_MOTION_TIMER;
+extern const char* MQTT_BASE_TOPIC_MANUAL_TIMER;
 
-// --- Topics for functions to address
-extern const char* MQTT_TOPIC_LIGHT_MOTION_TIMER_STATE; // shed/monitor/light/motion_timer/state"
-extern const char* MQTT_TOPIC_LIGHT_MOTION_TIMER_SET;   // shed/monitor/light/motion_timer/set"
-extern const char* MQTT_TOPIC_LIGHT_MANUAL_TIMER_STATE; // shed/monitor/light/manual_timer/state"
-extern const char* MQTT_TOPIC_LIGHT_MANUAL_TIMER_SET;   // shed/monitor/light/manual_timer/set"
+// --- Device & Sensor Availability Topics ---
+extern const char* MQTT_TOPIC_DEVICE_AVAILABILITY;
+extern const char* MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY;
+extern const char* MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY;
+extern const char* MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;
+
+// --- Light Control Topics (interacting with Sensor Hub) ---
+extern const char* MQTT_TOPIC_LIGHT_STATE;
+extern const char* MQTT_TOPIC_LIGHT_COMMAND;
+
+// --- Timer Control Topics (interacting with Sensor Hub) ---
+extern const char* MQTT_TOPIC_MOTION_TIMER_STATE;
+extern const char* MQTT_TOPIC_MOTION_TIMER_COMMAND;
+extern const char* MQTT_TOPIC_MANUAL_TIMER_STATE;
+extern const char* MQTT_TOPIC_MANUAL_TIMER_COMMAND;
+
+// --- Power Monitor Sensor Topics (Published by this device) ---
+// --- Channel 1: Solar Panel ---
+extern const char* MQTT_TOPIC_SOLAR_PANEL_VOLTAGE_STATE;
+extern const char* MQTT_TOPIC_SOLAR_PANEL_CURRENT_STATE;
+extern const char* MQTT_TOPIC_SOLAR_PANEL_POWER_STATE;
+extern const char* MQTT_TOPIC_SOLAR_PANEL_ENERGY_STATE;
+
+// --- Channel 2: Battery ---
+extern const char* MQTT_TOPIC_BATTERY_VOLTAGE_STATE;
+extern const char* MQTT_TOPIC_BATTERY_CURRENT_STATE;
+extern const char* MQTT_TOPIC_BATTERY_POWER_STATE;
+extern const char* MQTT_TOPIC_BATTERY_ENERGY_CHARGED_STATE;
+extern const char* MQTT_TOPIC_BATTERY_ENERGY_DISCHARGED_STATE;
+
+// --- Channel 3: Load ---
+extern const char* MQTT_TOPIC_LOAD_VOLTAGE_STATE;
+extern const char* MQTT_TOPIC_LOAD_CURRENT_STATE;
+extern const char* MQTT_TOPIC_LOAD_POWER_STATE;
+extern const char* MQTT_TOPIC_LOAD_ENERGY_STATE;
 
 // --- MQTT Payloads ---
 extern const char* MQTT_PAYLOAD_ONLINE;
 extern const char* MQTT_PAYLOAD_OFFLINE;
 
 #endif // CONFIG_H
+
+
 

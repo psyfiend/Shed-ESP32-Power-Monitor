@@ -229,11 +229,11 @@ void handle_lights_input(int encoderChange, bool buttonPressed) {
         }
         break;
       case EDIT_MOTION_TIMER:
-          client.publish(MQTT_TOPIC_LIGHT_MOTION_TIMER_SET, String(tempMotionTimerDuration / 1000).c_str(), true);
+          client.publish(MQTT_TOPIC_MOTION_TIMER_COMMAND, String(tempMotionTimerDuration / 1000).c_str(), true);
           currentLightsSubMode = LIGHTS_MENU;
           break;
       case EDIT_MANUAL_TIMER:
-          client.publish(MQTT_TOPIC_LIGHT_MANUAL_TIMER_SET, String(tempManualTimerDuration / 1000).c_str(), true);
+          client.publish(MQTT_TOPIC_MANUAL_TIMER_COMMAND, String(tempManualTimerDuration / 1000).c_str(), true);
           currentLightsSubMode = LIGHTS_MENU;
           break;
       }
@@ -286,7 +286,7 @@ void handle_motion_timer_command(String message) {
         Serial.print("Motion timer updated to ");
         Serial.print(newDurationSec);
         Serial.println(" seconds.");
-        client.publish(MQTT_TOPIC_LIGHT_MOTION_TIMER_STATE, message.c_str(), true);
+        client.publish(MQTT_TOPIC_MOTION_TIMER_STATE, message.c_str(), true);
     } else {
         Serial.println("Invalid motion timer value received.");
     }
@@ -299,7 +299,7 @@ void handle_manual_timer_command(String message) {
         Serial.print("Manual timer updated to ");
         Serial.print(newDurationSec);
         Serial.println(" seconds.");
-        client.publish(MQTT_TOPIC_LIGHT_MANUAL_TIMER_STATE, message.c_str(), true);
+        client.publish(MQTT_TOPIC_MANUAL_TIMER_STATE, message.c_str(), true);
     } else {
         Serial.println("Invalid manual timer value received.");
     }

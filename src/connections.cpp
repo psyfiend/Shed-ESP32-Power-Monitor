@@ -4,6 +4,7 @@
 #include "discovery.h"
 #include "connections.h"
 #include "config.h"
+#include "power_monitor.h"
 
 extern PubSubClient client;
 
@@ -55,10 +56,10 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     if (String(topic) == MQTT_TOPIC_LIGHT_STATE) {
     handle_light_state_update(message);
 
-    } else if (String(topic) == MQTT_TOPIC_LIGHT_MOTION_TIMER_SET) {
+    } else if (String(topic) == MQTT_TOPIC_MOTION_TIMER_COMMAND) {
     handle_motion_timer_command(message);
 
-    } else if (String(topic) == MQTT_TOPIC_LIGHT_MANUAL_TIMER_SET) {
+    } else if (String(topic) == MQTT_TOPIC_MANUAL_TIMER_COMMAND) {
     handle_manual_timer_command(message);
   }
 }
@@ -68,29 +69,33 @@ void reconnect() {
   Serial.print("Attempting MQTT connection...");
   String clientId = "ESP32-Solar-Monitor";
 
-  if (client.connect(clientId.c_str(), MQTT_USER, MQTT_PASSWORD, MQTT_TOPIC_AVAILABILITY, 1, true, MQTT_PAYLOAD_OFFLINE)) {
+  if (client.connect(clientId.c_str(), MQTT_USER, MQTT_PASSWORD, MQTT_TOPIC_DEVICE_AVAILABILITY, 1, true, MQTT_PAYLOAD_OFFLINE)) {
     Serial.println("connected!");
     Serial.println("------------------------------");
     
-    // Birth message and initial states
-    client.publish(MQTT_TOPIC_AVAILABILITY, MQTT_PAYLOAD_ONLINE, true);
+    // Publish device and sensor availability
+    client.publish(MQTT_TOPIC_DEVICE_AVAILABILITY, MQTT_PAYLOAD_ONLINE, true);
+    client.publish(MQTT_TOPIC_SOLAR_SENSOR_AVAILABILITY, is_sensor_online(1) ? MQTT_PAYLOAD_ONLINE : MQTT_PAYLOAD_OFFLINE, true);
+    client.publish(MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY, is_sensor_online(2) ? MQTT_PAYLOAD_ONLINE : MQTT_PAYLOAD_OFFLINE, true);
+    client.publish(MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY, is_sensor_online(3) ? MQTT_PAYLOAD_ONLINE : MQTT_PAYLOAD_OFFLINE, true);
+    Serial.println("Published device and sensor availability.");
     
     // Publish the default timers (in seconds)
     Serial.println("------------------------------");
     
     String motion_payload = String(MOTION_TIMER_DURATION / 1000);
-    client.publish(MQTT_TOPIC_LIGHT_MOTION_TIMER_STATE, motion_payload.c_str(), true);
+    client.publish(MQTT_TOPIC_MOTION_TIMER_STATE, motion_payload.c_str(), true);
 
     String manual_payload = String(MANUAL_TIMER_DURATION / 1000);
-    client.publish(MQTT_TOPIC_LIGHT_MANUAL_TIMER_STATE, manual_payload.c_str(), true);
+    client.publish(MQTT_TOPIC_MANUAL_TIMER_STATE, manual_payload.c_str(), true);
     
     Serial.println("Published initial timer states.");
 
     // Subscribe to specific light topics, apply retained values if broker is online
     Serial.println("------------------------------");
     client.subscribe(MQTT_TOPIC_LIGHT_STATE);
-    client.subscribe(MQTT_TOPIC_LIGHT_MOTION_TIMER_SET);
-    client.subscribe(MQTT_TOPIC_LIGHT_MANUAL_TIMER_SET);
+    client.subscribe(MQTT_TOPIC_MOTION_TIMER_COMMAND);
+    client.subscribe(MQTT_TOPIC_MANUAL_TIMER_COMMAND);
     Serial.print("Subscribed to command topics.");
 
     // Publish the discovery message

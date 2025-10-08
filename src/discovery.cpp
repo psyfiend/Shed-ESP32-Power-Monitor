@@ -37,10 +37,10 @@ void mqtt_discovery() {
     motion_timer_cmp["unit_of_meas"] = "s";
     motion_timer_cmp["uniq_id"] = "shed_solar_monitor_light_motion_timer";
     motion_timer_cmp["object_id"] = "shed_light_motion_timer";
-    motion_timer_cmp["~"] = MQTT_TOPIC_LIGHT_MOTION_TIMER_BASE; // shed/light/motion_timer
-    motion_timer_cmp["stat_t"] = "~/state";                     // shed/light/motion_timer/state
-    motion_timer_cmp["cmd_t"] = "~/set";                        // shed/light/motion_timer/set
-    motion_timer_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;       // shed/solar_monitor/availability
+    motion_timer_cmp["~"] = MQTT_BASE_TOPIC_MOTION_TIMER; 		// home/shed/number/motion_timer
+    motion_timer_cmp["stat_t"] = "~/state";                     // home/shed/number/motion_timer/state
+    motion_timer_cmp["cmd_t"] = "~/command";                    // home/shed/number/motion_timer/command
+    motion_timer_cmp["avty_t"] = MQTT_TOPIC_DEVICE_AVAILABILITY;       // devices/shed/solar_power_monitor/status
 
     // Manual override light timer
     JsonObject manual_timer_cmp = cmps_doc["shed_light_override_timer"].to<JsonObject>();
@@ -51,10 +51,10 @@ void mqtt_discovery() {
     manual_timer_cmp["unit_of_meas"] = "s";
     manual_timer_cmp["uniq_id"] = "shed_solar_monitor_light_override_timer";
     manual_timer_cmp["object_id"] = "shed_light_override_timer";
-    manual_timer_cmp["~"] = MQTT_TOPIC_LIGHT_MANUAL_TIMER_BASE; // shed/light/manual_timer
-    manual_timer_cmp["stat_t"] = "~/state";                     // shed/light/manual_timer/state
-    manual_timer_cmp["cmd_t"] = "~/set";                        // shed/light/manual_timer/set
-    manual_timer_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;       // shed/solar_monitor/availability
+    manual_timer_cmp["~"] = MQTT_BASE_TOPIC_MANUAL_TIMER; 		// home/shed/number/manual_timer
+    manual_timer_cmp["stat_t"] = "~/state";                     // home/shed/number/manual_timer/state
+    manual_timer_cmp["cmd_t"] = "~/command";                    // home/shed/number/manual_timer/command
+    manual_timer_cmp["avty_t"] = MQTT_TOPIC_DEVICE_AVAILABILITY;       // devices/shed/solar_power_monitor/status
 
     // INA226 Channel 1 - Solar Panel Voltage
     JsonObject power_ch1_v_cmp = cmps_doc["shed_solar_monitor_ch1_voltage"].to<JsonObject>();
@@ -63,12 +63,12 @@ void mqtt_discovery() {
     power_ch1_v_cmp["dev_cla"] = "voltage";
     power_ch1_v_cmp["unit_of_meas"] = "V";
     power_ch1_v_cmp["stat_cla"] = "measurement";
-    power_ch1_v_cmp["val_tpl"] = "{{ value_json.bus_voltage }}";
+    power_ch1_v_cmp["val_tpl"] = "{{ value | float }}";
     power_ch1_v_cmp["uniq_id"] = "shed_solar_monitor_ch1_voltage";
     power_ch1_v_cmp["object_id"] = "shed_solar_panel_voltage";
     power_ch1_v_cmp["ic"] = "mdi:flash";
-    power_ch1_v_cmp["stat_t"] = MQTT_TOPIC_POWER_CH1_STATE;  // shed/solar_monitor/panel
-    power_ch1_v_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch1_v_cmp["stat_t"] = MQTT_TOPIC_SOLAR_PANEL_VOLTAGE_STATE;	// home/shed/sensor/solar_panel_voltage/state
+    power_ch1_v_cmp["avty_t"] = MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/panel_sensor_status
     power_ch1_v_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch1_v_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -79,12 +79,12 @@ void mqtt_discovery() {
     power_ch1_a_cmp["dev_cla"] = "current";
     power_ch1_a_cmp["unit_of_meas"] = "mA";
     power_ch1_a_cmp["stat_cla"] = "measurement";
-    power_ch1_a_cmp["val_tpl"] = "{{ value_json.current_ma }}";
+    power_ch1_a_cmp["val_tpl"] = "{{ value | float }}";
     power_ch1_a_cmp["uniq_id"] = "shed_solar_monitor_ch1_current";
     power_ch1_a_cmp["object_id"] = "shed_solar_panel_current";
     power_ch1_a_cmp["ic"] = "mdi:current-dc";
-    power_ch1_a_cmp["stat_t"] = MQTT_TOPIC_POWER_CH1_STATE;  // shed/solar_monitor/panel
-    power_ch1_a_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch1_a_cmp["stat_t"] = MQTT_TOPIC_SOLAR_PANEL_CURRENT_STATE;	// home/shed/sensor/solar_panel_current/state
+    power_ch1_a_cmp["avty_t"] = MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/panel_sensor_status
     power_ch1_a_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch1_a_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -95,12 +95,12 @@ void mqtt_discovery() {
     power_ch1_p_cmp["dev_cla"] = "power";
     power_ch1_p_cmp["unit_of_meas"] = "mw";
     power_ch1_p_cmp["stat_cla"] = "measurement";
-    power_ch1_p_cmp["val_tpl"] = "{{ value_json.power_mw }}";
+    power_ch1_p_cmp["val_tpl"] = "{{ value | float }}";
     power_ch1_p_cmp["uniq_id"] = "shed_solar_monitor_ch1_power";
     power_ch1_p_cmp["object_id"] = "shed_solar_panel_power";
     power_ch1_p_cmp["ic"] = "mdi:solar-power-variant";
-    power_ch1_p_cmp["stat_t"] = MQTT_TOPIC_POWER_CH1_STATE;  // shed/solar_monitor/panel
-    power_ch1_p_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch1_p_cmp["stat_t"] = MQTT_TOPIC_SOLAR_PANEL_POWER_STATE;		// home/shed/sensor/solar_panel_power/state
+    power_ch1_p_cmp["avty_t"] = MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/panel_sensor_status
     power_ch1_p_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch1_p_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -111,12 +111,12 @@ void mqtt_discovery() {
     power_ch1_e_cmp["dev_cla"] = "energy";
     power_ch1_e_cmp["unit_of_meas"] = "Wh";
     power_ch1_e_cmp["stat_cla"] = "total_increasing";
-    power_ch1_e_cmp["val_tpl"] = "{{ value_json.total_energy_wh }}";
+    power_ch1_e_cmp["val_tpl"] = "{{ value | float }}";
     power_ch1_e_cmp["uniq_id"] = "shed_solar_monitor_ch1_energy";
     power_ch1_e_cmp["object_id"] = "shed_solar_panel_energy";
     power_ch1_e_cmp["ic"] = "mdi:chart-histogram";
-    power_ch1_e_cmp["stat_t"] = MQTT_TOPIC_POWER_CH1_STATE;  // shed/solar_monitor/battery
-    power_ch1_e_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch1_e_cmp["stat_t"] = MQTT_TOPIC_SOLAR_PANEL_ENERGY_STATE;	// home/shed/sensor/solar_panel_energy/state
+    power_ch1_e_cmp["avty_t"] = MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/panel_sensor_status
     power_ch1_e_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch1_e_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -127,12 +127,12 @@ void mqtt_discovery() {
     power_ch2_v_cmp["dev_cla"] = "voltage";
     power_ch2_v_cmp["unit_of_meas"] = "V";
     power_ch2_v_cmp["stat_cla"] = "measurement";
-    power_ch2_v_cmp["val_tpl"] = "{{ value_json.bus_voltage }}";
+    power_ch2_v_cmp["val_tpl"] = "{{ value | float }}";
     power_ch2_v_cmp["uniq_id"] = "shed_solar_monitor_ch2_voltage";
     power_ch2_v_cmp["object_id"] = "shed_battery_voltage";
     power_ch2_v_cmp["ic"] = "mdi:flash";
-    power_ch2_v_cmp["stat_t"] = MQTT_TOPIC_POWER_CH2_STATE;  // shed/solar_monitor/battery
-    power_ch2_v_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch2_v_cmp["stat_t"] = MQTT_TOPIC_BATTERY_VOLTAGE_STATE;		// home/shed/sensor/solar_battery_voltage/state
+    power_ch2_v_cmp["avty_t"] = MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/battery_sensor_status
     power_ch2_v_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch2_v_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -143,12 +143,12 @@ void mqtt_discovery() {
     power_ch2_a_cmp["dev_cla"] = "current";
     power_ch2_a_cmp["unit_of_meas"] = "mA";
     power_ch2_a_cmp["stat_cla"] = "measurement";
-    power_ch2_a_cmp["val_tpl"] = "{{ value_json.current_ma }}";
+    power_ch2_a_cmp["val_tpl"] = "{{ value | float }}";
     power_ch2_a_cmp["uniq_id"] = "shed_solar_monitor_ch2_current";
     power_ch2_a_cmp["object_id"] = "shed_battery_current";
     power_ch2_a_cmp["ic"] = "mdi:current-dc";
-    power_ch2_a_cmp["stat_t"] = MQTT_TOPIC_POWER_CH2_STATE;  // shed/solar_monitor/battery
-    power_ch2_a_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch2_a_cmp["stat_t"] = MQTT_TOPIC_BATTERY_CURRENT_STATE;		// home/shed/sensor/solar_battery_current/state
+    power_ch2_a_cmp["avty_t"] = MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/battery_sensor_status
     power_ch2_a_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch2_a_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -159,12 +159,12 @@ void mqtt_discovery() {
     power_ch2_p_cmp["dev_cla"] = "power";
     power_ch2_p_cmp["unit_of_meas"] = "mw";
     power_ch2_p_cmp["stat_cla"] = "measurement";
-    power_ch2_p_cmp["val_tpl"] = "{{ value_json.power_mw }}";
+    power_ch2_p_cmp["val_tpl"] = "{{ value | float }}";
     power_ch2_p_cmp["uniq_id"] = "shed_solar_monitor_ch2_power";
     power_ch2_p_cmp["object_id"] = "shed_battery_power";
     power_ch2_p_cmp["ic"] = "mdi:battery";
-    power_ch2_p_cmp["stat_t"] = MQTT_TOPIC_POWER_CH2_STATE;  // shed/solar_monitor/battery
-    power_ch2_p_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch2_p_cmp["stat_t"] = MQTT_TOPIC_BATTERY_POWER_STATE;			// home/shed/sensor/solar_battery_power/state
+    power_ch2_p_cmp["avty_t"] = MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/battery_sensor_status
     power_ch2_p_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch2_p_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -175,12 +175,12 @@ void mqtt_discovery() {
     power_ch2_e_in_cmp["dev_cla"] = "energy";
     power_ch2_e_in_cmp["unit_of_meas"] = "Wh";
     power_ch2_e_in_cmp["stat_cla"] = "total_increasing";
-    power_ch2_e_in_cmp["val_tpl"] = "{{ value_json.total_energy_charge_wh }}";
+    power_ch2_e_in_cmp["val_tpl"] = "{{ value | float }}";
     power_ch2_e_in_cmp["uniq_id"] = "shed_solar_monitor_ch2_energy_in";
     power_ch2_e_in_cmp["object_id"] = "shed_battery_energy_charged";
     power_ch2_e_in_cmp["ic"] = "mdi:battery-arrow-up";
-    power_ch2_e_in_cmp["stat_t"] = MQTT_TOPIC_POWER_CH2_STATE;  // shed/solar_monitor/battery
-    power_ch2_e_in_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch2_e_in_cmp["stat_t"] = MQTT_TOPIC_BATTERY_ENERGY_CHARGED_STATE;	// home/shed/sensor/solar_battery_energy_charged/state
+    power_ch2_e_in_cmp["avty_t"] = MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/battery_sensor_status
     power_ch2_e_in_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch2_e_in_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -191,12 +191,12 @@ void mqtt_discovery() {
     power_ch2_e_out_cmp["dev_cla"] = "energy";
     power_ch2_e_out_cmp["unit_of_meas"] = "Wh";
     power_ch2_e_out_cmp["stat_cla"] = "total_increasing";
-    power_ch2_e_out_cmp["val_tpl"] = "{{ value_json.total_energy_discharge_wh }}";
+    power_ch2_e_out_cmp["val_tpl"] = "{{ value | float }}";
     power_ch2_e_out_cmp["uniq_id"] = "shed_solar_monitor_ch2_energy_out";
     power_ch2_e_out_cmp["object_id"] = "shed_battery_energy_discharged";
     power_ch2_e_out_cmp["ic"] = "mdi:battery-arrow-down";
-    power_ch2_e_out_cmp["stat_t"] = MQTT_TOPIC_POWER_CH2_STATE;  // shed/solar_monitor/battery
-    power_ch2_e_out_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch2_e_out_cmp["stat_t"] = MQTT_TOPIC_BATTERY_ENERGY_DISCHARGED_STATE;	// home/shed/sensor/solar_battery_energy_discharged/state
+    power_ch2_e_out_cmp["avty_t"] = MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY;		// devices/shed_power_monitor/battery_sensor_status
     power_ch2_e_out_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch2_e_out_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -207,12 +207,12 @@ void mqtt_discovery() {
     power_ch3_v_cmp["dev_cla"] = "voltage";
     power_ch3_v_cmp["unit_of_meas"] = "V";
     power_ch3_v_cmp["stat_cla"] = "measurement";
-    power_ch3_v_cmp["val_tpl"] = "{{ value_json.bus_voltage }}";
+    power_ch3_v_cmp["val_tpl"] = "{{ value | float }}";
     power_ch3_v_cmp["uniq_id"] = "shed_solar_monitor_ch3_voltage";
     power_ch3_v_cmp["object_id"] = "shed_load_voltage";
     power_ch3_v_cmp["ic"] = "mdi:flash";
-    power_ch3_v_cmp["stat_t"] = MQTT_TOPIC_POWER_CH3_STATE;  // shed/solar_monitor/load
-    power_ch3_v_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch3_v_cmp["stat_t"] = MQTT_TOPIC_LOAD_VOLTAGE_STATE;			// home/shed/sensor/solar_load_voltage/state
+    power_ch3_v_cmp["avty_t"] = MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/load_sensor_status
     power_ch3_v_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch3_v_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -223,12 +223,12 @@ void mqtt_discovery() {
     power_ch3_a_cmp["dev_cla"] = "current";
     power_ch3_a_cmp["unit_of_meas"] = "mA";
     power_ch3_a_cmp["stat_cla"] = "measurement";
-    power_ch3_a_cmp["val_tpl"] = "{{ value_json.current_ma }}";
+    power_ch3_a_cmp["val_tpl"] = "{{ value | float }}";
     power_ch3_a_cmp["uniq_id"] = "shed_solar_monitor_ch3_current";
     power_ch3_a_cmp["object_id"] = "shed_load_current";
     power_ch3_a_cmp["ic"] = "mdi:current-dc";
-    power_ch3_a_cmp["stat_t"] = MQTT_TOPIC_POWER_CH3_STATE;  // shed/solar_monitor/load
-    power_ch3_a_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch3_a_cmp["stat_t"] = MQTT_TOPIC_LOAD_CURRENT_STATE;			// home/shed/sensor/solar_load_current/state
+    power_ch3_a_cmp["avty_t"] = MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/load_sensor_status
     power_ch3_a_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch3_a_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -239,12 +239,12 @@ void mqtt_discovery() {
     power_ch3_p_cmp["dev_cla"] = "power";
     power_ch3_p_cmp["unit_of_meas"] = "mW";
     power_ch3_p_cmp["stat_cla"] = "measurement";
-    power_ch3_p_cmp["val_tpl"] = "{{ value_json.power_mw }}";
+    power_ch3_p_cmp["val_tpl"] = "{{ value | float }}";
     power_ch3_p_cmp["uniq_id"] = "shed_solar_monitor_ch3_power";
     power_ch3_p_cmp["object_id"] = "shed_load_power";
     power_ch3_p_cmp["ic"] = "mdi:power-plug";
-    power_ch3_p_cmp["stat_t"] = MQTT_TOPIC_POWER_CH3_STATE;  // shed/solar_monitor/load
-    power_ch3_p_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch3_p_cmp["stat_t"] = MQTT_TOPIC_LOAD_POWER_STATE;			// home/shed/sensor/solar_load_power/state
+    power_ch3_p_cmp["avty_t"] = MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/load_sensor_status
     power_ch3_p_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch3_p_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 
@@ -255,12 +255,12 @@ void mqtt_discovery() {
     power_ch3_e_cmp["dev_cla"] = "energy";
     power_ch3_e_cmp["unit_of_meas"] = "Wh";
     power_ch3_e_cmp["stat_cla"] = "total_increasing";
-    power_ch3_e_cmp["val_tpl"] = "{{ value_json.total_energy_wh }}";
+    power_ch3_e_cmp["val_tpl"] = "{{ value | float }}";
     power_ch3_e_cmp["uniq_id"] = "shed_solar_monitor_ch3_energy";
     power_ch3_e_cmp["object_id"] = "shed_load_energy";
     power_ch3_e_cmp["ic"] = "mdi:chart-histogram";
-    power_ch3_e_cmp["stat_t"] = MQTT_TOPIC_POWER_CH3_STATE;  // shed/solar_monitor/load
-    power_ch3_e_cmp["avty_t"] = MQTT_TOPIC_AVAILABILITY;
+    power_ch3_e_cmp["stat_t"] = MQTT_TOPIC_LOAD_ENERGY_STATE;			// home/shed/sensor/solar_load_energy/state
+    power_ch3_e_cmp["avty_t"] = MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;	// devices/shed_power_monitor/load_sensor_status
     power_ch3_e_cmp["pl_avail"] = MQTT_PAYLOAD_ONLINE;
     power_ch3_e_cmp["pl_not_avail"] = MQTT_PAYLOAD_OFFLINE;
 

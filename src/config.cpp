@@ -42,7 +42,8 @@ const char* WIFI_PASSWORD = "seamosss";
 const char* MQTT_SERVER = "192.168.0.70";
 const char* MQTT_USER = "mqtt_user";
 const char* MQTT_PASSWORD = "mqtt_user3700";
-const char* DEVICE_ID = "shed_solar_monitor";
+const char* DEVICE_ID = "shed_power_monitor"; // Changed from shed_solar_monitor for clarity
+
 
 // --- Power Monitor ---
 const uint8_t INA226_CH1_ADDRESS = 0x40; // Solar Panel
@@ -59,29 +60,53 @@ const int NUM_MODES = 5;
 const unsigned long INACTIVITY_TIMEOUT = 30000;
 const int DISPLAY_UPDATE_INTERVAL = 100;
 
-// --- MQTT Topics ---
-// const char* MQTT_BASE_TOPIC = "shed/solar_monitor";
-const char* MQTT_TOPIC_AVAILABILITY = "shed/solar_monitor/availability";
-// const char* MQTT_TOPIC_MOTION_STATE = "shed/motion/state";       // Physical PIR sensor state
-// const char* MQTT_TOPIC_OCCUPANCY_STATE = "shed/occupancy/state"; // Software-based occupancy state (based on timer)
-const char* MQTT_TOPIC_LIGHT_STATE = "shed/light/state";         // Physical light state
-const char* MQTT_TOPIC_LIGHT_COMMAND = "shed/light/switch";      // Command to control the light state
-// const char* MQTT_TOPIC_LUX_STATE = "shed/lux/state";             // Ambient light sensor state
+// --- Grand Unified MQTT Topics ---
+// This new structure follows the home/[location]/[domain]/[object_id]/[message_type] pattern.
 
-// --- Base Topics for MQTT Discovery ---
-// const char* MQTT_TOPIC_LIGHT_BASE = "shed/light";
-const char* MQTT_TOPIC_LIGHT_MOTION_TIMER_BASE = "shed/light/motion_timer";
-const char* MQTT_TOPIC_LIGHT_MANUAL_TIMER_BASE = "shed/light/manual_timer";
-const char* MQTT_TOPIC_POWER_CH1_STATE = "shed/solar_monitor/panel";
-const char* MQTT_TOPIC_POWER_CH2_STATE = "shed/solar_monitor/battery";
-const char* MQTT_TOPIC_POWER_CH3_STATE = "shed/solar_monitor/load";
+// --- Base Topics for Discovery Payloads ---
+const char* MQTT_BASE_TOPIC_LIGHT = "home/shed/light/main";
+const char* MQTT_BASE_TOPIC_MOTION_TIMER = "home/shed/number/motion_timer";
+const char* MQTT_BASE_TOPIC_MANUAL_TIMER = "home/shed/number/manual_timer";
 
-// --- Topics for functions to address
-const char* MQTT_TOPIC_LIGHT_MOTION_TIMER_STATE = "shed/light/motion_timer/state";
-const char* MQTT_TOPIC_LIGHT_MOTION_TIMER_SET = "shed/light/motion_timer/set";
-const char* MQTT_TOPIC_LIGHT_MANUAL_TIMER_STATE = "shed/light/manual_timer/state";
-const char* MQTT_TOPIC_LIGHT_MANUAL_TIMER_SET = "shed/light/manual_timer/set";
+// --- Device & Sensor Availability Topics ---
+const char* MQTT_TOPIC_DEVICE_AVAILABILITY = "devices/shed_power_monitor/status";
+const char* MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY = "devices/shed_power_monitor/panel_sensor_status";
+const char* MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY = "devices/shed_power_monitor/battery_sensor_status";
+const char* MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY = "devices/shed_power_monitor/load_sensor_status";
+
+// --- Light Control Topics (interacting with Sensor Hub) ---
+const char* MQTT_TOPIC_LIGHT_STATE = "home/shed/light/main/state";
+const char* MQTT_TOPIC_LIGHT_COMMAND = "home/shed/light/main/command";
+
+// --- Timer Control Topics (interacting with Sensor Hub) ---
+const char* MQTT_TOPIC_MOTION_TIMER_STATE = "home/shed/number/motion_timer/state";
+const char* MQTT_TOPIC_MOTION_TIMER_COMMAND = "home/shed/number/motion_timer/command";
+const char* MQTT_TOPIC_MANUAL_TIMER_STATE = "home/shed/number/manual_timer/state";
+const char* MQTT_TOPIC_MANUAL_TIMER_COMMAND = "home/shed/number/manual_timer/command";
+
+// --- Power Monitor Sensor Topics (Published by this device) ---
+// --- Channel 1: Solar Panel ---
+const char* MQTT_TOPIC_SOLAR_PANEL_VOLTAGE_STATE = "home/shed/sensor/solar_panel_voltage/state";
+const char* MQTT_TOPIC_SOLAR_PANEL_CURRENT_STATE = "home/shed/sensor/solar_panel_current/state";
+const char* MQTT_TOPIC_SOLAR_PANEL_POWER_STATE = "home/shed/sensor/solar_panel_power/state";
+const char* MQTT_TOPIC_SOLAR_PANEL_ENERGY_STATE = "home/shed/sensor/solar_panel_energy/state";
+
+// --- Channel 2: Battery ---
+const char* MQTT_TOPIC_BATTERY_VOLTAGE_STATE = "home/shed/sensor/solar_battery_voltage/state";
+const char* MQTT_TOPIC_BATTERY_CURRENT_STATE = "home/shed/sensor/solar_battery_current/state";
+const char* MQTT_TOPIC_BATTERY_POWER_STATE = "home/shed/sensor/solar_battery_power/state";
+const char* MQTT_TOPIC_BATTERY_ENERGY_CHARGED_STATE = "home/shed/sensor/solar_battery_energy_charged/state";
+const char* MQTT_TOPIC_BATTERY_ENERGY_DISCHARGED_STATE = "home/shed/sensor/solar_battery_energy_discharged/state";
+
+// --- Channel 3: Load ---
+const char* MQTT_TOPIC_LOAD_VOLTAGE_STATE = "home/shed/sensor/solar_load_voltage/state";
+const char* MQTT_TOPIC_LOAD_CURRENT_STATE = "home/shed/sensor/solar_load_current/state";
+const char* MQTT_TOPIC_LOAD_POWER_STATE = "home/shed/sensor/solar_load_power/state";
+const char* MQTT_TOPIC_LOAD_ENERGY_STATE = "home/shed/sensor/solar_load_energy/state";
+
 
 // --- MQTT Payloads ---
 const char* MQTT_PAYLOAD_ONLINE = "online";
 const char* MQTT_PAYLOAD_OFFLINE = "offline";
+
+

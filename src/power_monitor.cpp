@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h> 
 #include <INA226.h>
-#include <ArduinoJson.h>
 #include <PubSubClient.h>
 #include "connections.h"
 #include "power_monitor.h"
@@ -11,6 +10,9 @@
 INA226 *ina_ch1 = nullptr;
 INA226 *ina_ch2 = nullptr;
 INA226 *ina_ch3 = nullptr;
+
+// --- Add a new global array to track sensor status ---
+bool sensor_online[3] = {false, false, false};
 
 // Variables to hold the latest sensor readings for all 3 channels
 float busVoltage[3] = {0.0, 0.0, 0.0};
@@ -40,7 +42,8 @@ void setup_power_monitor() {
   Wire.begin();
   
   // Conditional Initialization for Channel 1 ---
-  if (check_i2c_device(INA226_CH1_ADDRESS)) {
+  sensor_online[0] = check_i2c_device(INA226_CH1_ADDRESS);
+  if (sensor_online[0]) {
     ina_ch1 = new INA226();
     ina_ch1->begin(INA226_CH1_ADDRESS);
     ina_ch1->configure(INA226_AVERAGES_16, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
@@ -51,7 +54,8 @@ void setup_power_monitor() {
   }
 
   // Conditional Initialization for Channel 2 ---
-  if (check_i2c_device(INA226_CH2_ADDRESS)) {
+  sensor_online[1] = check_i2c_device(INA226_CH2_ADDRESS);
+  if (sensor_online[1]) {
     ina_ch2 = new INA226();
     ina_ch2->begin(INA226_CH2_ADDRESS);
     ina_ch2->configure(INA226_AVERAGES_16, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
@@ -62,7 +66,8 @@ void setup_power_monitor() {
   }
 
   // Conditional Initialization for Channel 3 ---
-  if (check_i2c_device(INA226_CH3_ADDRESS)) {
+  sensor_online[2] = check_i2c_device(INA226_CH3_ADDRESS);
+  if (sensor_online[2]) {
     ina_ch3 = new INA226();
     ina_ch3->begin(INA226_CH3_ADDRESS);
     ina_ch3->configure(INA226_AVERAGES_16, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
@@ -77,6 +82,7 @@ void loop_power_monitor() {
   if (millis() - lastSensorReadTime > SENSOR_READ_INTERVAL) {
     float timeDeltaHours = (float)SENSOR_READ_INTERVAL / 3600000.0; // (ms in interval) / (ms in hour)
     lastSensorReadTime = millis();
+    char payloadBuffer[10]; // Reusable buffer for converting floats to strings
     
     // --- Read from Channel 1 ---
     if (ina_ch1 != nullptr) {
@@ -84,16 +90,20 @@ void loop_power_monitor() {
       current_ma[0] = ina_ch1->readShuntCurrent() * 1000; // Convert Amps to Milliamps
       power_mw[0] = ina_ch1->readBusPower() * 1000;       // Convert Watts to Milliwatts ---
       totalEnergyWh[0] += (power_mw[0] / 1000.0) * timeDeltaHours; // (Power in mW to W) * hours
-    }
 
-    JsonDocument powerCh1Payload;
-    powerCh1Payload["bus_voltage"] = busVoltage[0];
-    powerCh1Payload["current_ma"] = current_ma[0];
-    powerCh1Payload["power_mw"] = power_mw[0];
-    powerCh1Payload["total_energy_wh"] = totalEnergyWh[0];
-    char buffer1[128];
-    serializeJson(powerCh1Payload, buffer1);
-    client.publish(MQTT_TOPIC_POWER_CH1_STATE, buffer1, true);
+      // Publish each measurement to its own topic
+      dtostrf(busVoltage[0], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_SOLAR_PANEL_VOLTAGE_STATE, payloadBuffer, true);
+      
+      dtostrf(current_ma[0], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_SOLAR_PANEL_CURRENT_STATE, payloadBuffer, true);
+
+      dtostrf(power_mw[0], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_SOLAR_PANEL_POWER_STATE, payloadBuffer, true);
+      
+      dtostrf(totalEnergyWh[0], 1, 4, payloadBuffer);
+      client.publish(MQTT_TOPIC_SOLAR_PANEL_ENERGY_STATE, payloadBuffer, true);
+    }
 
     // --- Read from Channel 2 ---
     if (ina_ch2 != nullptr) {
@@ -107,17 +117,23 @@ void loop_power_monitor() {
       } else {
         batteryEnergyDischargeWh += -batteryEnergyDeltaWh; // Add to discharge if negative
       }
-    }
 
-    JsonDocument powerCh2Payload;
-    powerCh2Payload["bus_voltage"] = busVoltage[1];
-    powerCh2Payload["current_ma"] = current_ma[1];
-    powerCh2Payload["power_mw"] = power_mw[1];
-    powerCh2Payload["total_energy_charge_wh"] = batteryEnergyChargeWh;
-    powerCh2Payload["total_energy_discharge_wh"] = batteryEnergyDischargeWh;
-    char buffer2[256];  // increased buffer size for larger payload
-    serializeJson(powerCh2Payload, buffer2);
-    client.publish(MQTT_TOPIC_POWER_CH2_STATE, buffer2, true);
+      // Publish each measurement to its own topic
+      dtostrf(busVoltage[1], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_BATTERY_VOLTAGE_STATE, payloadBuffer, true);
+      
+      dtostrf(current_ma[1], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_BATTERY_CURRENT_STATE, payloadBuffer, true);
+
+      dtostrf(power_mw[1], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_BATTERY_POWER_STATE, payloadBuffer, true);
+      
+      dtostrf(batteryEnergyChargeWh, 1, 4, payloadBuffer);
+      client.publish(MQTT_TOPIC_BATTERY_ENERGY_CHARGED_STATE, payloadBuffer, true);
+      
+      dtostrf(batteryEnergyDischargeWh, 1, 4, payloadBuffer);
+      client.publish(MQTT_TOPIC_BATTERY_ENERGY_DISCHARGED_STATE, payloadBuffer, true);
+    }
 
     // --- Read from Channel 3 ---
     if (ina_ch3 != nullptr) {
@@ -125,16 +141,20 @@ void loop_power_monitor() {
       current_ma[2] = ina_ch3->readShuntCurrent() * 1000; // Convert Amps to Milliamps
       power_mw[2] = ina_ch3->readBusPower() * 1000;       // Convert Watts to Milliwatts ---
       totalEnergyWh[2] += (power_mw[2] / 1000.0) * timeDeltaHours; // (Power in mW to W) * hours
-    }
 
-    JsonDocument powerCh3Payload;
-    powerCh3Payload["bus_voltage"] = busVoltage[2];
-    powerCh3Payload["current_ma"] = current_ma[2];
-    powerCh3Payload["power_mw"] = power_mw[2];
-    powerCh3Payload["total_energy_wh"] = totalEnergyWh[2];
-    char buffer3[128];
-    serializeJson(powerCh3Payload, buffer3);
-    client.publish(MQTT_TOPIC_POWER_CH3_STATE, buffer3, true);
+      // Publish each measurement to its own topic
+      dtostrf(busVoltage[2], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_LOAD_VOLTAGE_STATE, payloadBuffer, true);
+      
+      dtostrf(current_ma[2], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_LOAD_CURRENT_STATE, payloadBuffer, true);
+      
+      dtostrf(power_mw[2], 1, 2, payloadBuffer);
+      client.publish(MQTT_TOPIC_LOAD_POWER_STATE, payloadBuffer, true);
+      
+      dtostrf(totalEnergyWh[2], 1, 4, payloadBuffer);
+      client.publish(MQTT_TOPIC_LOAD_ENERGY_STATE, payloadBuffer, true);
+    }
   }
 }
 
@@ -154,3 +174,7 @@ float get_power(int channel) {
   return 0.0;
 }
 
+bool is_sensor_online(int channel) {
+  if (channel >= 1 && channel <= 3) return sensor_online[channel - 1];
+  return false;
+}
