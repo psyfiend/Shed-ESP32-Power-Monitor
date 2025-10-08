@@ -23,7 +23,7 @@ void mqtt_discovery() {
     // Origin document
     JsonObject origin_doc = discovery_doc["o"].to<JsonObject>();
     origin_doc["name"] = "Psyki + Gem 100 years";
-    origin_doc["sw"] = "0.1";
+    origin_doc["sw"] = "0.2";
     origin_doc["url"] = "https://switz.org";
 
     JsonObject cmps_doc = discovery_doc["cmps"].to<JsonObject>();
