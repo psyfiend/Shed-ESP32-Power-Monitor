@@ -75,7 +75,7 @@ void reconnect() {
     
     // Publish device and sensor availability
     client.publish(MQTT_TOPIC_DEVICE_AVAILABILITY, MQTT_PAYLOAD_ONLINE, true);
-    client.publish(MQTT_TOPIC_SOLAR_SENSOR_AVAILABILITY, is_sensor_online(1) ? MQTT_PAYLOAD_ONLINE : MQTT_PAYLOAD_OFFLINE, true);
+    client.publish(MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY, is_sensor_online(1) ? MQTT_PAYLOAD_ONLINE : MQTT_PAYLOAD_OFFLINE, true);
     client.publish(MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY, is_sensor_online(2) ? MQTT_PAYLOAD_ONLINE : MQTT_PAYLOAD_OFFLINE, true);
     client.publish(MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY, is_sensor_online(3) ? MQTT_PAYLOAD_ONLINE : MQTT_PAYLOAD_OFFLINE, true);
     Serial.println("Published device and sensor availability.");
@@ -96,7 +96,7 @@ void reconnect() {
     client.subscribe(MQTT_TOPIC_LIGHT_STATE);
     client.subscribe(MQTT_TOPIC_MOTION_TIMER_COMMAND);
     client.subscribe(MQTT_TOPIC_MANUAL_TIMER_COMMAND);
-    Serial.print("Subscribed to command topics.");
+    Serial.println("Subscribed to command topics.");
 
     // Publish the discovery message
     mqtt_discovery();

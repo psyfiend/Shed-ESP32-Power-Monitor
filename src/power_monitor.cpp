@@ -1,13 +1,16 @@
 #include <Arduino.h>
 #include <Wire.h> 
 #include <INA226.h>
+#include <Adafruit_INA219.h>
 #include <PubSubClient.h>
 #include "connections.h"
 #include "power_monitor.h"
 #include "config.h"
 
 // Pointers are initialized to nullptr to indicate they are not yet assigned.
-INA226 *ina_ch1 = nullptr;
+// --- MODIFICATION: ina_ch1 is now an INA219, ch2 and ch3 are still INA226 ---
+Adafruit_INA219 *ina_ch1 = nullptr; // <-- CHANGED
+// INA226 *ina_ch1 = nullptr;
 INA226 *ina_ch2 = nullptr;
 INA226 *ina_ch3 = nullptr;
 
@@ -44,13 +47,18 @@ void setup_power_monitor() {
   // Conditional Initialization for Channel 1 ---
   sensor_online[0] = check_i2c_device(INA226_CH1_ADDRESS);
   if (sensor_online[0]) {
-    ina_ch1 = new INA226();
-    ina_ch1->begin(INA226_CH1_ADDRESS);
-    ina_ch1->configure(INA226_AVERAGES_16, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    ina_ch1->calibrate(INA226_CH1_SHUNT, 10);
-    Serial.println("INA226 Channel 1 (Solar Panel) Initialized.");
+    ina_ch1 = new Adafruit_INA219(INA226_CH1_ADDRESS);
+    ina_ch1->setCalibration_32V_2A(); // Configure for 32V, 2A range
+    ina_ch1->begin();
+    // ina_ch1 = new INA226();
+    // ina_ch1->begin(INA226_CH1_ADDRESS);
+    // ina_ch1->configure(INA226_AVERAGES_16, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    // ina_ch1->calibrate(INA226_CH1_SHUNT, 10);
+    // Serial.println("INA226 Channel 1 (Solar Panel) Initialized.");
+    Serial.println("INA219 Channel 1 (Solar Panel) Initialized.");
   } else {
-    Serial.println("INA226 Channel 1 not found.");
+    // Serial.println("INA226 Channel 1 not found.");
+    Serial.println("INA219 Channel 1 not found.");
   }
 
   // Conditional Initialization for Channel 2 ---
@@ -86,9 +94,9 @@ void loop_power_monitor() {
     
     // --- Read from Channel 1 ---
     if (ina_ch1 != nullptr) {
-      busVoltage[0] = ina_ch1->readBusVoltage();
-      current_ma[0] = ina_ch1->readShuntCurrent() * 1000; // Convert Amps to Milliamps
-      power_mw[0] = ina_ch1->readBusPower() * 1000;       // Convert Watts to Milliwatts ---
+      busVoltage[0] = ina_ch1->getBusVoltage_V();   // readBusVoltage();
+      current_ma[0] = ina_ch1->getCurrent_mA();     // readShuntCurrent() * 1000; // Convert Amps to Milliamps
+      power_mw[0] = ina_ch1->getPower_mW();         // readBusPower() * 1000;       // Convert Watts to Milliwatts ---
       totalEnergyWh[0] += (power_mw[0] / 1000.0) * timeDeltaHours; // (Power in mW to W) * hours
 
       // Publish each measurement to its own topic
