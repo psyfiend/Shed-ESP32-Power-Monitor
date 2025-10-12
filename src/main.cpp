@@ -26,8 +26,8 @@ int lightsMenuSelection = 0;
 bool lightIsOn = false;
 bool lightManualOverride = false; // We can infer this from which timer is active
 unsigned long timerRemainingSeconds = 0;
-unsigned long motionTimerDuration = 60000;  // Default, will be updated by MQTT
-unsigned long manualTimerDuration = 300000; // Default, will be updated by MQTT
+unsigned long motionTimerDuration = MOTION_TIMER_DURATION;  // Default, will be updated by MQTT
+unsigned long manualTimerDuration = MANUAL_TIMER_DURATION; // Default, will be updated by MQTT
 unsigned long lightOnTime = 0; 
 
 // --- Temporary variables for editing timers ---
@@ -85,7 +85,7 @@ void loop() {
     client.loop();
   }
   
-  loop_encoder(); // Interpret knob/button input
+  //  loop_encoder(); // Interpret knob/button input  --- No longer needed with stable ISR for button and knob
   handle_input(); // Handle user input
   loop_power_monitor(); // Run core logic for this device
 
@@ -215,11 +215,11 @@ void handle_lights_input(int encoderChange, bool buttonPressed) {
               break;
               }
             case 1:
-              tempMotionTimerDuration = MOTION_TIMER_DURATION;
+              tempMotionTimerDuration = motionTimerDuration;
               currentLightsSubMode = EDIT_MOTION_TIMER;
               break;
             case 2:
-              tempManualTimerDuration = MANUAL_TIMER_DURATION;
+              tempManualTimerDuration = manualTimerDuration;
               currentLightsSubMode = EDIT_MANUAL_TIMER;
               break;
             case 3:
@@ -278,14 +278,14 @@ void handle_light_state_update(String message) {
     Serial.println(message);
 }
 
-void handle_timer_remaining_update(String message) {
-    timerRemainingSeconds = message.toInt();
-}
-
 void handle_motion_timer_state_update(String message) {
     motionTimerDuration = message.toInt() * 1000;
 }
 
 void handle_manual_timer_state_update(String message) {
     manualTimerDuration = message.toInt() * 1000;
+}
+
+void handle_timer_remaining_update(String message) {
+    timerRemainingSeconds = message.toInt();
 }

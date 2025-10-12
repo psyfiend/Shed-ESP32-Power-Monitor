@@ -10,13 +10,10 @@ extern PubSubClient client;
 
 // main.cpp functions to handle UI updates via MQTT
 extern void handle_light_state_update(String message);
+extern void handle_motion_timer_state_update(String message);
+extern void handle_manual_timer_state_update(String message);
 extern void handle_timer_remaining_update(String message);
-
-// These are defined in main.cpp, but our callback needs to control them
-extern bool lightManualOverride;
-extern unsigned long lastMotionTime;
-extern unsigned long MOTION_TIMER_DURATION;
-extern unsigned long MANUAL_TIMER_DURATION;
+extern bool is_sensor_online(int channel);
 
 void setup_wifi() {
   delay(10);
@@ -44,32 +41,26 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   payload[length] = '\0'; // Add a null terminator
   String message = (char*)payload;
 
-  Serial.println("--- MQTT Message Received ---");
-  Serial.print("Topic: ");
-  Serial.println(topic);
-  Serial.print("Payload: ");
-  Serial.println(message);
-  Serial.println("-----------------------------");
-
+  // Add a filter to prevent spamming the serial monitor ---
+  if (String(topic) != MQTT_TOPIC_TIMER_REMAINING_STATE) {
+    Serial.println("--- MQTT Message Received ---");
+    Serial.print("Topic: ");
+    Serial.println(topic);
+    Serial.print("Payload: ");
+    Serial.println(message);
+    Serial.println("-----------------------------");
+  }
+  
   // ---- Route messages based on topic ----
-
-  // This device only listens to STATE topics to update its display
   if (String(topic) == MQTT_TOPIC_LIGHT_STATE) {
     handle_light_state_update(message);
-    
+  } else if (String(topic) == MQTT_TOPIC_MOTION_TIMER_STATE) {
+    handle_motion_timer_state_update(message);
+  } else if (String(topic) == MQTT_TOPIC_MANUAL_TIMER_STATE) {
+    handle_manual_timer_state_update(message);
   } else if (String(topic) == MQTT_TOPIC_TIMER_REMAINING_STATE) {
     handle_timer_remaining_update(message);
   }
-
-//    if (String(topic) == MQTT_TOPIC_LIGHT_STATE) {
-//    handle_light_state_update(message);
-
-//    } else if (String(topic) == MQTT_TOPIC_MOTION_TIMER_COMMAND) {
-//    handle_motion_timer_command(message);
-
-//    } else if (String(topic) == MQTT_TOPIC_MANUAL_TIMER_COMMAND) {
-//    handle_manual_timer_command(message);
-//  }
 }
 
 
@@ -102,9 +93,9 @@ void reconnect() {
     // Subscribe to specific light topics, apply retained values if broker is online
     Serial.println("------------------------------");
     client.subscribe(MQTT_TOPIC_LIGHT_STATE);
+    client.subscribe(MQTT_TOPIC_MOTION_TIMER_STATE);
+    client.subscribe(MQTT_TOPIC_MANUAL_TIMER_STATE);
     client.subscribe(MQTT_TOPIC_TIMER_REMAINING_STATE);
-//    client.subscribe(MQTT_TOPIC_MOTION_TIMER_COMMAND);
-//    client.subscribe(MQTT_TOPIC_MANUAL_TIMER_COMMAND);
     Serial.println("Subscribed to command topics.");
 
     // Publish the discovery message

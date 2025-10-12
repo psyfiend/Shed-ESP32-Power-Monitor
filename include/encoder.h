@@ -3,7 +3,7 @@
 
 // Public functions available to the rest of the application
 void setup_encoder();
-void loop_encoder(); // This should be called in the main loop()
+// void loop_encoder(); // This should be called in the main loop() --- No longer needed with stable ISR for button and knob
 
 // Functions to check the encoder's state
 int get_encoder_value(); // This function now returns the persistent counter value
