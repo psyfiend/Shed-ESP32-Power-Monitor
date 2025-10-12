@@ -8,10 +8,9 @@
 
 extern PubSubClient client;
 
-// main.cpp defines these functions to handle the specific MQTT commands
+// main.cpp functions to handle UI updates via MQTT
 extern void handle_light_state_update(String message);
-extern void handle_motion_timer_command(String message);
-extern void handle_manual_timer_command(String message);
+extern void handle_timer_remaining_update(String message);
 
 // These are defined in main.cpp, but our callback needs to control them
 extern bool lightManualOverride;
@@ -53,15 +52,24 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.println("-----------------------------");
 
   // ---- Route messages based on topic ----
-    if (String(topic) == MQTT_TOPIC_LIGHT_STATE) {
+
+  // This device only listens to STATE topics to update its display
+  if (String(topic) == MQTT_TOPIC_LIGHT_STATE) {
     handle_light_state_update(message);
-
-    } else if (String(topic) == MQTT_TOPIC_MOTION_TIMER_COMMAND) {
-    handle_motion_timer_command(message);
-
-    } else if (String(topic) == MQTT_TOPIC_MANUAL_TIMER_COMMAND) {
-    handle_manual_timer_command(message);
+    
+  } else if (String(topic) == MQTT_TOPIC_TIMER_REMAINING_STATE) {
+    handle_timer_remaining_update(message);
   }
+
+//    if (String(topic) == MQTT_TOPIC_LIGHT_STATE) {
+//    handle_light_state_update(message);
+
+//    } else if (String(topic) == MQTT_TOPIC_MOTION_TIMER_COMMAND) {
+//    handle_motion_timer_command(message);
+
+//    } else if (String(topic) == MQTT_TOPIC_MANUAL_TIMER_COMMAND) {
+//    handle_manual_timer_command(message);
+//  }
 }
 
 
@@ -81,21 +89,22 @@ void reconnect() {
     Serial.println("Published device and sensor availability.");
     
     // Publish the default timers (in seconds)
-    Serial.println("------------------------------");
+//    Serial.println("------------------------------");
     
-    String motion_payload = String(MOTION_TIMER_DURATION / 1000);
-    client.publish(MQTT_TOPIC_MOTION_TIMER_STATE, motion_payload.c_str(), true);
+//    String motion_payload = String(MOTION_TIMER_DURATION / 1000);
+//    client.publish(MQTT_TOPIC_MOTION_TIMER_STATE, motion_payload.c_str(), true);
 
-    String manual_payload = String(MANUAL_TIMER_DURATION / 1000);
-    client.publish(MQTT_TOPIC_MANUAL_TIMER_STATE, manual_payload.c_str(), true);
+//    String manual_payload = String(MANUAL_TIMER_DURATION / 1000);
+//    client.publish(MQTT_TOPIC_MANUAL_TIMER_STATE, manual_payload.c_str(), true);
     
-    Serial.println("Published initial timer states.");
+//    Serial.println("Published initial timer states.");
 
     // Subscribe to specific light topics, apply retained values if broker is online
     Serial.println("------------------------------");
     client.subscribe(MQTT_TOPIC_LIGHT_STATE);
-    client.subscribe(MQTT_TOPIC_MOTION_TIMER_COMMAND);
-    client.subscribe(MQTT_TOPIC_MANUAL_TIMER_COMMAND);
+    client.subscribe(MQTT_TOPIC_TIMER_REMAINING_STATE);
+//    client.subscribe(MQTT_TOPIC_MOTION_TIMER_COMMAND);
+//    client.subscribe(MQTT_TOPIC_MANUAL_TIMER_COMMAND);
     Serial.println("Subscribed to command topics.");
 
     // Publish the discovery message

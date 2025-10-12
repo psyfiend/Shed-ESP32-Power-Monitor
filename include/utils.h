@@ -5,6 +5,8 @@
 
 // --- Public Function Declarations ---
 
+const char* format_large_number(float value); // <---- ADDED
+
 /**
  * @brief Formats a duration in milliseconds into a HH:MM:SS string.
  * @param milliseconds The duration to format.

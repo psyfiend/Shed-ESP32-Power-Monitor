@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-static const int DEVICE_DISCOVERY_PAYLOAD_SIZE = 8192; // Size of the JSON payload for MQTT Discovery
+static const int DEVICE_DISCOVERY_PAYLOAD_SIZE = 3072; // Size of the JSON payload for MQTT Discovery
 
 // ESP32 DevKitC
 // I2C
@@ -81,6 +81,7 @@ extern const char* MQTT_TOPIC_MOTION_TIMER_STATE;
 extern const char* MQTT_TOPIC_MOTION_TIMER_COMMAND;
 extern const char* MQTT_TOPIC_MANUAL_TIMER_STATE;
 extern const char* MQTT_TOPIC_MANUAL_TIMER_COMMAND;
+extern const char* MQTT_TOPIC_TIMER_REMAINING_STATE;
 
 // --- Power Monitor Sensor Topics (Published by this device) ---
 // --- Channel 1: Solar Panel ---

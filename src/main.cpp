@@ -16,38 +16,40 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // --- State Tracking Variables ---
-LightsSubMode currentLightsSubMode = LIVE_STATUS;
 DisplayMode currentMode = POWER_MODE_ALL;
+LightsSubMode currentLightsSubMode = LIVE_STATUS;
 PowerSubMode currentPowerSubMode = LIVE_POWER;
 
 int lightsMenuSelection = 0;
-const int LIGHTS_MENU_ITEM_COUNT = 4;
+
+// --- Light State Variables (Synced from Sensor Hub via MQTT) ---
+bool lightIsOn = false;
+bool lightManualOverride = false; // We can infer this from which timer is active
+unsigned long timerRemainingSeconds = 0;
+unsigned long motionTimerDuration = 60000;  // Default, will be updated by MQTT
+unsigned long manualTimerDuration = 300000; // Default, will be updated by MQTT
+unsigned long lightOnTime = 0; 
 
 // --- Temporary variables for editing timers ---
 unsigned long tempMotionTimerDuration;
 unsigned long tempManualTimerDuration;
 
-// --- Light State Variables ---
-// These now reflect the state of the light as reported by the Sensor Hub via MQTT
-bool lightIsOn = false;
-bool lightManualOverride = false;
-unsigned long lastMotionTime = 0;
-unsigned long lightOnTime = 0;
-
-int lastEncoderValue = 0;
-
 // --- Non-Blocking Timers ---
 unsigned long lastDisplayUpdateTime = 0;
 unsigned long lastMqttReconnectAttempt = 0;
 unsigned long lastUserActivityTime = 0;
+int lastEncoderValue = 0;
 
 // --- Forward Declarations ---
 void handle_input();
 void handle_lights_input(int encoderChange, bool buttonPressed);
 void handle_power_input(int encoderChange, bool buttonPressed);
+
+// --- MQTT Update Handlers (for UI) ---
 void handle_light_state_update(String message);
-void handle_motion_timer_command(String message);
-void handle_manual_timer_command(String message);
+void handle_timer_remaining_update(String message);
+void handle_motion_timer_state_update(String message);
+void handle_manual_timer_state_update(String message);
 
 
 void setup() {
@@ -71,7 +73,6 @@ void setup() {
 }
 
 void loop() {
-  // Always handle core background tasks
   loop_ota();
 
   if (!client.connected()) {
@@ -84,7 +85,9 @@ void loop() {
     client.loop();
   }
   
-  loop_encoder();
+  loop_encoder(); // Interpret knob/button input
+  handle_input(); // Handle user input
+  loop_power_monitor(); // Run core logic for this device
 
   // Inactivity timer to reset the view
   if (millis() - lastUserActivityTime > INACTIVITY_TIMEOUT) {
@@ -93,31 +96,29 @@ void loop() {
     currentPowerSubMode = LIVE_POWER;
   }
 
-  // Handle user input
-  handle_input();
-
-  // Run core logic for this device
-  loop_power_monitor();
-
   // Update the display on a non-blocking timer
   if (millis() - lastDisplayUpdateTime > DISPLAY_UPDATE_INTERVAL) {
     lastDisplayUpdateTime = millis();
     
     // Package up the current state into a data structure
     DisplayData data;
-    data.lightIsOn = lightIsOn;
-    data.lightManualOverride = lightManualOverride;
-    data.lightOnTime = lightOnTime;
-    data.lastMotionTime = lastMotionTime;
-    data.lightsMenuSelection = lightsMenuSelection;
-    data.tempMotionTimerDuration = tempMotionTimerDuration;
-    data.tempManualTimerDuration = tempManualTimerDuration;
+    // Power Data
     for(int i=0; i<3; i++) {
       data.busVoltage[i] = get_bus_voltage(i+1);
       data.current[i] = get_current(i+1);
       data.power[i] = get_power(i+1);
     }
-    
+    // Light Status Data
+    data.lightIsOn = lightIsOn;
+    data.lightManualOverride = lightManualOverride; // This needs to be inferred or sent
+    data.timerRemainingSeconds = timerRemainingSeconds;
+    data.motionTimerDuration = motionTimerDuration;
+    data.manualTimerDuration = manualTimerDuration;
+    // Menu/UI State Data
+    data.lightsMenuSelection = lightsMenuSelection;
+    data.tempMotionTimerDuration = tempMotionTimerDuration;
+    data.tempManualTimerDuration = tempManualTimerDuration;
+        
     // Call the main display handler
     update_display(currentMode, currentLightsSubMode, currentPowerSubMode, data);
   }
@@ -138,10 +139,8 @@ void handle_input() {
     lastUserActivityTime = millis();
   }
 
-  if (encoderChange == 0 && !buttonPressed) {
-    return; // No input, do nothing
-  }
-
+  if (encoderChange == 0 && !buttonPressed) return; // No input, do nothing
+  
   // Route the input to the correct specialized handler
   switch (currentMode) {
     case LIGHTS_MODE:
@@ -240,7 +239,7 @@ void handle_lights_input(int encoderChange, bool buttonPressed) {
     }
 }
 
-
+// --- Specialized Input Handler for all Power Modes ---
 void handle_power_input(int encoderChange, bool buttonPressed) {
   // Handle knob turning
   if (encoderChange != 0) {
@@ -256,7 +255,7 @@ void handle_power_input(int encoderChange, bool buttonPressed) {
   }
 
   // Handle button presses
-  if (buttonPressed) {
+  if (buttonPressed) { // <---- UPDATED (Complete logic restored)
     if (currentMode != POWER_MODE_ALL) {
       // Toggle subscreen for channel-specific views
       currentPowerSubMode = (currentPowerSubMode == LIVE_POWER) ? POWER_SUBSCREEN : LIVE_POWER;
@@ -264,43 +263,29 @@ void handle_power_input(int encoderChange, bool buttonPressed) {
   }
 }
 
-// --- This function is now purely for updating the UI state
+
+// --- MQTT Update Handlers ---
 void handle_light_state_update(String message) {
     message.toUpperCase();
-    if (message == "ON") {
-        if (!lightIsOn) {   // If light is changing from off to on, record the time
-            lightOnTime = millis();
-        }
-        lightIsOn = true;
-    } else {
-        lightIsOn = false;
-    }
-    Serial.print("Received light state update: ");
-    Serial.println(message);
-} 
+    bool newLightState = (message == "ON");
 
-void handle_motion_timer_command(String message) {
-    unsigned long newDurationSec = message.toInt();
-    if (newDurationSec >= 10 && newDurationSec <= 3600) {
-        MOTION_TIMER_DURATION = newDurationSec * 1000;
-        Serial.print("Motion timer updated to ");
-        Serial.print(newDurationSec);
-        Serial.println(" seconds.");
-        client.publish(MQTT_TOPIC_MOTION_TIMER_STATE, message.c_str(), true);
-    } else {
-        Serial.println("Invalid motion timer value received.");
+    if (newLightState && !lightIsOn) { // <---- UPDATED (If state is changing to ON)
+        lightOnTime = millis();       // <---- ADDED (Record the timestamp)
     }
+    lightIsOn = newLightState;
+
+    Serial.print("UI Updated: Light state is now ");
+    Serial.println(message);
 }
 
-void handle_manual_timer_command(String message) {
-    unsigned long newDurationSec = message.toInt();
-    if (newDurationSec >= 10 && newDurationSec <= 3600) {
-        MANUAL_TIMER_DURATION = newDurationSec * 1000;
-        Serial.print("Manual timer updated to ");
-        Serial.print(newDurationSec);
-        Serial.println(" seconds.");
-        client.publish(MQTT_TOPIC_MANUAL_TIMER_STATE, message.c_str(), true);
-    } else {
-        Serial.println("Invalid manual timer value received.");
-    }
+void handle_timer_remaining_update(String message) {
+    timerRemainingSeconds = message.toInt();
+}
+
+void handle_motion_timer_state_update(String message) {
+    motionTimerDuration = message.toInt() * 1000;
+}
+
+void handle_manual_timer_state_update(String message) {
+    manualTimerDuration = message.toInt() * 1000;
 }

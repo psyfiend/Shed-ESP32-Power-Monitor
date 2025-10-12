@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+const int LIGHTS_MENU_ITEM_COUNT = 4;
+
 // --- UI State Enums ---
 // By placing these here, both main.cpp and display_manager.cpp can see them.
 enum DisplayMode {
@@ -19,22 +21,34 @@ enum LightsSubMode {
   EDIT_MOTION_TIMER, 
   EDIT_MANUAL_TIMER 
 };
-enum PowerSubMode { LIVE_POWER, POWER_SUBSCREEN };
+enum PowerSubMode { 
+  LIVE_POWER, 
+  POWER_SUBSCREEN 
+};
 
-// --- Display Data Structure ---
-// This struct packages up all the data the display might need,
-// making it easy to pass from the main logic to the display manager.
+
+// --- Data Structure for Display Updates ---
+// This struct bundles all the data needed to draw any screen.
 struct DisplayData {
-  bool lightIsOn;
-  bool lightManualOverride;
-  unsigned long lastMotionTime;
-  unsigned long lightOnTime;
+  // Power Data
   float busVoltage[3];
   float current[3];
   float power[3];
+  
+  // Light Status Data
+  bool lightIsOn;
+  bool lightManualOverride;
+
+  // NEW: Add timer data for the progress bar
+  unsigned long timerRemainingSeconds;
+  unsigned long motionTimerDuration;
+  unsigned long manualTimerDuration;
+  unsigned long lightOnTime;
+
+  // Menu/UI State Data
   int lightsMenuSelection;
-  unsigned long tempMotionTimerDuration; // <-- ADDED
-  unsigned long tempManualTimerDuration; // <-- ADDED
+  unsigned long tempMotionTimerDuration;
+  unsigned long tempManualTimerDuration;
 };
 
 

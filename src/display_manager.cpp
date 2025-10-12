@@ -1,315 +1,213 @@
+#include <U8g2lib.h>
 #include "display_manager.h"
-#include "config.h"
-#include "utils.h"
-#include <Adafruit_GFX.h>
-#include <Adafruit_SH110X.h>
+#include "utils.h" // For format_large_number
 
-// --- Private Objects ---
-static Adafruit_SH1107 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-static bool displayInitialized = false; // Status flag for display hardware
-
-
-// --- Forward declarations for new private drawing functions ---
-static void draw_lights_menu_screen(const DisplayData& data);
-static void draw_edit_timer_screen(const DisplayData& data, bool isMotionTimer);
+#ifdef U8X8_HAVE_HW_SPI
+#include <SPI.h>
+#endif
+#ifdef U8X8_HAVE_HW_I2C
+#include <Wire.h>
+#endif
 
 
-// --- Private Drawing Functions ---
+// --- Display Object ---
+// Using U8g2 for the SH1106 128x128 OLED
+U8G2_SH1107_SEEED_128X128_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
-static void draw_power_all_screen(const DisplayData& data) {
-  display.clearDisplay();
-  display.setTextColor(SH110X_WHITE);
-  display.drawRoundRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 8, SH110X_WHITE);
-  
-  display.setTextSize(2);
-  String title = "POWER";
-  int16_t x1, y1;
-  uint16_t w, h;
-  display.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
-  display.setCursor((SCREEN_WIDTH - w) / 2, 8);
-  display.println(title);
-  
-  display.drawLine(5, 28, SCREEN_WIDTH - 5, 28, SH110X_WHITE);
-  
-  const char* labels[] = {"Solar Panel", "Battery", "Load"};
-  
-  display.setTextSize(1);
-  for (int i = 0; i < 3; i++) {
-    int yPos = 38 + (i * 30);
-    display.setCursor(8, yPos);
-    display.print(labels[i]);
-    display.setCursor(10, yPos + 12);
-    display.print(data.busVoltage[i], 2);
-    display.print("V");
-    display.setCursor(70, yPos + 12);
-    display.print(data.current[i], 0);
-    display.print("mA");
-    if (i < 2) {
-        display.drawLine(5, yPos + 25, SCREEN_WIDTH - 5, yPos + 25, SH110X_WHITE);
-    }
-  }
+// --- Forward Declarations for local drawing functions ---
+void draw_power_overview(const DisplayData& data);
+void draw_power_channel_detail(int channel, const DisplayData& data);
+void draw_lights_live_status(const DisplayData& data);
+void draw_lights_menu(const DisplayData& data);
+void draw_lights_edit_timer(bool isMotionTimer, const DisplayData& data);
 
-  display.display();
-}
-
-static void draw_power_ch_live_screen(int channel, const DisplayData& data) {
-    const char* titles[] = {"", "PANEL", "BATTERY", "LOAD"};
-    display.clearDisplay();
-    display.setTextColor(SH110X_WHITE);
-    display.drawRoundRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 8, SH110X_WHITE);
-    
-    display.setTextSize(2);
-    String title = titles[channel];
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
-    display.setCursor((SCREEN_WIDTH - w) / 2, 8);
-    display.println(title);
-    
-    display.drawLine(5, 28, SCREEN_WIDTH - 5, 28, SH110X_WHITE);
-
-    display.setTextSize(1);
-    display.setCursor(10, 45);
-    display.print("Voltage:");
-    display.setCursor(70, 45);
-    display.print(data.busVoltage[channel-1], 2);
-    display.print(" V");
-
-    display.setCursor(10, 65);
-    display.print("Current:");
-    display.setCursor(70, 65);
-    display.print(data.current[channel-1], 0);
-    display.print(" mA");
-    
-    display.setCursor(10, 85);
-    display.print("Power:");
-    display.setCursor(70, 85);
-    display.print(data.power[channel-1], 0);
-    display.print(" mW");
-    
-    display.display();
-}
-
-static void draw_lights_live_screen(const DisplayData& data) {
-  display.clearDisplay();
-  display.setTextColor(SH110X_WHITE);
-  display.drawRoundRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 8, SH110X_WHITE);
-  
-  display.setTextSize(3);
-  String stateText = data.lightIsOn ? "ON" : "OFF";
-  if (data.lightManualOverride) {
-      stateText = "MANUAL";
-  }
-  int16_t x1, y1;
-  uint16_t w, h;
-  display.getTextBounds(stateText, 0, 0, &x1, &y1, &w, &h);
-  display.setCursor((SCREEN_WIDTH - w) / 2, 8);
-  display.println(stateText);
-  
-  unsigned long currentTimerDuration = get_current_timer_duration(data.lightManualOverride);
-
-  int barWidth = 0;
-  if(data.lightIsOn) {
-      unsigned long timeSinceMotion = millis() - data.lastMotionTime;
-      if (timeSinceMotion < currentTimerDuration) {
-          barWidth = map(timeSinceMotion, 0, currentTimerDuration, 0, SCREEN_WIDTH - 20);
-      }
-  } else {
-    barWidth = 0;
-  }
-  barWidth = (SCREEN_WIDTH - 20) - barWidth;
-
-  int barY = 40;
-  display.drawRoundRect(10, barY, SCREEN_WIDTH - 20, 8, 2, SH110X_WHITE);
-  display.fillRoundRect(10, barY, barWidth, 8, 2, SH110X_WHITE);
-  
-  display.drawLine(5, 60, SCREEN_WIDTH - 5, 60, SH110X_WHITE);
-
-  display.setTextSize(1);
-  display.setCursor(10, 70);
-  display.print("Time On");
-
-  display.setTextSize(2);
-  display.setCursor(10, 80);
-  display.print(formatDuration(data.lightIsOn ? millis() - data.lightOnTime : 0));
-  
-  display.setTextSize(1);
-  display.setCursor(10, 100);
-  display.print("Time Left");
-  
-  unsigned long timeRemaining = 0;
-  if (data.lightIsOn) {
-    unsigned long timeSinceMotion = millis() - data.lastMotionTime;
-    if (timeSinceMotion < currentTimerDuration) {
-      timeRemaining = currentTimerDuration - timeSinceMotion;
-    }
-  }
-  display.setTextSize(2);
-  display.setCursor(10, 110);
-  display.print(formatDuration(timeRemaining));
-
-  display.display();
-}
-
-static void draw_lights_menu_screen(const DisplayData& data) {
-    display.clearDisplay();
-    display.setTextColor(SH110X_WHITE);
-    display.drawRoundRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 8, SH110X_WHITE);
-
-    display.setTextSize(2);
-    String title = "LIGHTS";
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
-    display.setCursor((SCREEN_WIDTH - w) / 2, 8);
-    display.println(title);
-    display.drawLine(5, 28, SCREEN_WIDTH - 5, 28, SH110X_WHITE);
-
-    const char* menuItems[] = {"", "Motion", "Manual", "Back"};
-    // --- UPDATED: Dynamic text now reflects actual light state ---
-    menuItems[0] = (data.lightIsOn) ? "Turn Off" : "Turn On";
-
-    display.setTextSize(2);
-    for (int i = 0; i < 4; i++) {
-        int yPos = 40 + (i * 22);
-        if (i == data.lightsMenuSelection) {
-            display.fillRect(5, yPos - 2, SCREEN_WIDTH - 10, 20, SH110X_WHITE);
-            display.setTextColor(SH110X_BLACK);
-            display.setCursor(10, yPos);
-            display.println(menuItems[i]);
-            display.setTextColor(SH110X_WHITE);
-        } else {
-            display.setCursor(10, yPos);
-            display.println(menuItems[i]);
-        }
-    }
-    display.display();
-}
-
-// --- UPDATED: Cosmetic changes for the edit screen ---
-static void draw_edit_timer_screen(const DisplayData& data, bool isMotionTimer) {
-    display.clearDisplay();
-    display.setTextColor(SH110X_WHITE);
-    display.drawRoundRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 8, SH110X_WHITE);
-
-    display.setTextSize(2);
-    String title = isMotionTimer ? "MOTION" : "MANUAL"; // Shorter title
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
-    display.setCursor((SCREEN_WIDTH - w) / 2, 8);
-    display.println(title);
-    display.drawLine(5, 28, SCREEN_WIDTH - 5, 28, SH110X_WHITE);
-    
-    // Display the timer value being edited with a smaller font
-    display.setTextSize(2); // Smaller font size
-    unsigned long durationToDisplay = isMotionTimer ? data.tempMotionTimerDuration : data.tempManualTimerDuration;
-    String timeText = formatDuration(durationToDisplay);
-    display.getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
-    display.setCursor((SCREEN_WIDTH - w) / 2, 65); // Repositioned
-    display.println(timeText);
-
-    // Display instructional text
-    display.setTextSize(1);
-    String instruction = "Turn to adjust. Press to Save.";
-    display.getTextBounds(instruction, 0, 0, &x1, &y1, &w, &h);
-    display.setCursor((SCREEN_WIDTH - w) / 2, 110);
-    display.println(instruction);
-
-    display.display();
-}
-
-
-static void draw_lights_sub_screen() {
-    display.clearDisplay();
-    display.setTextColor(SH110X_WHITE);
-    display.drawRoundRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 8, SH110X_WHITE);
-    display.setTextSize(2);
-    display.setCursor(22, 55);
-    display.println("Lights");
-    display.setCursor(10, 75);
-    display.println("Subscreen");
-    display.display();
-}
-
-static void draw_power_sub_screen(int channel) {
-    display.clearDisplay();
-    display.setTextColor(SH110X_WHITE);
-    display.drawRoundRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 8, SH110X_WHITE);
-    display.setTextSize(2);
-    display.setCursor(10, 55);
-    display.print("CH ");
-    display.print(channel);
-    display.print(" Sub");
-    display.display();
-}
-
-
-// --- Public Functions ---
 
 void setup_display() {
-  if (!display.begin(OLED_I2C_ADDRESS, true)) {
-    Serial.println(F("SH1107 allocation failed. Running headless."));
-    displayInitialized = false;
-    // for (;;); // Removed to continue boot for headless operation
-  } else {
-    displayInitialized = true;
-    display.clearDisplay();
-    display.display();
-  }
+  u8g2.begin();
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_ncenB10_tr);
+  u8g2.drawStr(10, 32, "System Boot...");
+  u8g2.sendBuffer();
+  delay(1000);
 }
 
-
 void update_display(DisplayMode mode, LightsSubMode lightsSub, PowerSubMode powerSub, const DisplayData& data) {
-  // Guard clause to prevent drawing if display is not connected
-  if (!displayInitialized) {
-    return;
-  }
+  u8g2.clearBuffer();
 
   switch (mode) {
+    case POWER_MODE_ALL:
+      draw_power_overview(data);
+      break;
+    case POWER_MODE_CH1:
+      if (powerSub == LIVE_POWER) draw_power_channel_detail(1, data);
+      // else draw other subscreens
+      break;
+    case POWER_MODE_CH2:
+       if (powerSub == LIVE_POWER) draw_power_channel_detail(2, data);
+      // else draw other subscreens
+      break;
+    case POWER_MODE_CH3:
+       if (powerSub == LIVE_POWER) draw_power_channel_detail(3, data);
+      // else draw other subscreens
+      break;
     case LIGHTS_MODE:
       switch (lightsSub) {
         case LIVE_STATUS:
-          draw_lights_live_screen(data);
+          draw_lights_live_status(data);
           break;
         case LIGHTS_MENU:
-          draw_lights_menu_screen(data);
+          draw_lights_menu(data);
           break;
         case EDIT_MOTION_TIMER:
-          draw_edit_timer_screen(data, true);
+          draw_lights_edit_timer(true, data);
           break;
         case EDIT_MANUAL_TIMER:
-          draw_edit_timer_screen(data, false);
+          draw_lights_edit_timer(false, data);
           break;
       }
       break;
-    case POWER_MODE_ALL:
-      draw_power_all_screen(data);
-      break;
-    case POWER_MODE_CH1:
-      if (powerSub == LIVE_POWER) {
-        draw_power_ch_live_screen(1, data);
-      } else {
-        draw_power_sub_screen(1);
-      }
-      break;
-    case POWER_MODE_CH2:
-      if (powerSub == LIVE_POWER) {
-        draw_power_ch_live_screen(2, data);
-      } else {
-        draw_power_sub_screen(2);
-      }
-      break;
-    case POWER_MODE_CH3:
-      if (powerSub == LIVE_POWER) {
-        draw_power_ch_live_screen(3, data);
-      } else {
-        draw_power_sub_screen(3);
-      }
-      break;
-    default:
-      draw_power_all_screen(data);
-      break;
   }
+
+  u8g2.sendBuffer();
+}
+
+
+void draw_lights_live_status(const DisplayData& data) {
+    u8g2.setFont(u8g2_font_ncenB10_tr);
+    u8g2.drawStr(0, 12, "Shed Light Control");
+    u8g2.drawHLine(0, 16, 128);
+
+    u8g2.setFont(u8g2_font_profont22_mr);
+    if (data.lightIsOn) {
+        u8g2.drawStr(30, 50, "ON");
+    } else {
+        u8g2.drawStr(25, 50, "OFF");
+    }
+
+    // --- NEW: Draw the Timer Progress Bar ---
+    if (data.lightIsOn) {
+        unsigned long totalDurationSec = data.lightManualOverride ? 
+                                         (data.manualTimerDuration / 1000) : 
+                                         (data.motionTimerDuration / 1000);
+        
+        if (totalDurationSec > 0) {
+            // Calculate progress bar width (max 104 pixels)
+            int progressWidth = map(data.timerRemainingSeconds, 0, totalDurationSec, 0, 104);
+            if (progressWidth < 0) progressWidth = 0;
+            if (progressWidth > 104) progressWidth = 104;
+            
+            // Draw the frame for the progress bar
+            u8g2.drawFrame(10, 64, 108, 10);
+            // Draw the filled bar
+            u8g2.drawBox(12, 66, progressWidth, 6);
+        }
+
+        // Display remaining time
+        u8g2.setFont(u8g2_font_ncenB08_tr);
+        char timeBuf[20];
+        sprintf(timeBuf, "%lu s remaining", data.timerRemainingSeconds);
+        u8g2.drawStr(10, 88, timeBuf);
+        // Display "Time on"
+        unsigned long onDurationSec = (millis() - data.lightOnTime) / 1000;
+        sprintf(timeBuf, "On for: %lu s", onDurationSec);
+        u8g2.drawStr(10, 102, timeBuf);
+    }
+}
+
+void draw_power_overview(const DisplayData& data) {
+    char buf[20];
+
+    u8g2.setFont(u8g2_font_ncenB10_tr);
+    u8g2.drawStr(0, 12, "Power Overview");
+    u8g2.drawHLine(0, 16, 128);
+
+    u8g2.setFont(u8g2_font_7x13B_tr);
+    // Channel 1 - Solar
+    u8g2.drawStr(0, 32, "Solar:");
+    sprintf(buf, "%.2f V", data.busVoltage[0]);
+    u8g2.drawStr(50, 32, buf);
+    sprintf(buf, "%.0f W", data.power[0] / 1000); // Convert mW to W
+    u8g2.drawStr(0, 48, format_large_number(data.current[0]));
+    u8g2.drawStr(50, 48, buf);
+
+
+    // Channel 2 - Battery
+    u8g2.drawStr(0, 72, "Battery:");
+    sprintf(buf, "%.2f V", data.busVoltage[1]);
+    u8g2.drawStr(50, 72, buf);
+    sprintf(buf, "%.0f W", data.power[1] / 1000);
+    u8g2.drawStr(0, 88, format_large_number(data.current[1]));
+    u8g2.drawStr(50, 88, buf);
+    
+    // Channel 3 - Load
+    u8g2.drawStr(0, 112, "Load:");
+    sprintf(buf, "%.2f V", data.busVoltage[2]);
+    u8g2.drawStr(50, 112, buf);
+    sprintf(buf, "%.0f W", data.power[2] / 1000);
+    u8g2.drawStr(0, 128, format_large_number(data.current[2]));
+    u8g2.drawStr(50, 128, buf);
+}
+
+void draw_power_channel_detail(int channel, const DisplayData& data) {
+    char buf[20];
+    const char* title = "";
+    if (channel == 1) title = "Solar Panel";
+    if (channel == 2) title = "Battery";
+    if (channel == 3) title = "Load";
+
+    u8g2.setFont(u8g2_font_ncenB10_tr);
+    u8g2.drawStr(0, 12, title);
+    u8g2.drawHLine(0, 16, 128);
+
+    u8g2.setFont(u8g2_font_profont22_mr);
+    sprintf(buf, "%.2f V", data.busVoltage[channel-1]);
+    u8g2.drawStr(10, 50, buf);
+
+    u8g2.setFont(u8g2_font_ncenB10_tr);
+    sprintf(buf, "Current: %s", format_large_number(data.current[channel-1]));
+    u8g2.drawStr(10, 80, buf);
+
+    sprintf(buf, "Power:   %.1f W", data.power[channel-1] / 1000.0);
+    u8g2.drawStr(10, 100, buf);
+}
+
+void draw_lights_menu(const DisplayData& data) {
+    const char* menuItems[] = {"Toggle Light", "Motion Timer", "Manual Timer", "Back"};
+    
+    u8g2.setFont(u8g2_font_ncenB10_tr);
+    u8g2.drawStr(0, 12, "Lights Menu");
+    u8g2.drawHLine(0, 16, 128);
+
+    u8g2.setFont(u8g2_font_7x13B_tr);
+    for (int i = 0; i < LIGHTS_MENU_ITEM_COUNT; i++) {
+        if (i == data.lightsMenuSelection) {
+            u8g2.drawBox(0, 24 + i * 16, 128, 16);
+            u8g2.setDrawColor(0); // Black text on white background
+            u8g2.drawStr(4, 38 + i * 16, menuItems[i]);
+            u8g2.setDrawColor(1); // Reset to white text
+        } else {
+            u8g2.drawStr(4, 38 + i * 16, menuItems[i]);
+        }
+    }
+}
+
+void draw_lights_edit_timer(bool isMotionTimer, const DisplayData& data) {
+    char buf[30];
+    unsigned long durationToEdit = isMotionTimer ? data.tempMotionTimerDuration : data.tempManualTimerDuration;
+    const char* title = isMotionTimer ? "Edit Motion Timer" : "Edit Manual Timer";
+
+    u8g2.setFont(u8g2_font_ncenB10_tr);
+    u8g2.drawStr(0, 12, title);
+    u8g2.drawHLine(0, 16, 128);
+
+    u8g2.setFont(u8g2_font_profont22_mr);
+    unsigned long minutes = durationToEdit / 60000;
+    unsigned long seconds = (durationToEdit % 60000) / 1000;
+    sprintf(buf, "%02lu:%02lu", minutes, seconds);
+    u8g2.drawStr(20, 70, buf);
+
+    u8g2.setFont(u8g2_font_ncenB08_tr);
+    u8g2.drawStr(10, 100, "Turn to adjust");
+    u8g2.drawStr(10, 115, "Press to save");
 }
 

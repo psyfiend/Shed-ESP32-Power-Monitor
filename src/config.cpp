@@ -83,6 +83,7 @@ const char* MQTT_TOPIC_MOTION_TIMER_STATE = "home/shed/number/motion_timer/state
 const char* MQTT_TOPIC_MOTION_TIMER_COMMAND = "home/shed/number/motion_timer/command";
 const char* MQTT_TOPIC_MANUAL_TIMER_STATE = "home/shed/number/manual_timer/state";
 const char* MQTT_TOPIC_MANUAL_TIMER_COMMAND = "home/shed/number/manual_timer/command";
+const char* MQTT_TOPIC_TIMER_REMAINING_STATE = "home/shed/sensor/light_timer_remaining/state"; // NEW
 
 // --- Power Monitor Sensor Topics (Published by this device) ---
 // --- Channel 1: Solar Panel ---
