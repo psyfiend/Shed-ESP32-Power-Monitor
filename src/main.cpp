@@ -25,6 +25,7 @@ int lightsMenuSelection = 0;
 // --- Light State Variables (Synced from Sensor Hub via MQTT) ---
 bool lightIsOn = false;
 bool lightManualOverride = false; // We can infer this from which timer is active
+bool occupancyDetected = false; // New variable to track occupancy state
 unsigned long timerRemainingSeconds = 0;
 unsigned long motionTimerDuration = MOTION_TIMER_DURATION;  // Default, will be updated by MQTT
 unsigned long manualTimerDuration = MANUAL_TIMER_DURATION; // Default, will be updated by MQTT
@@ -50,6 +51,7 @@ void handle_light_state_update(String message);
 void handle_timer_remaining_update(String message);
 void handle_motion_timer_state_update(String message);
 void handle_manual_timer_state_update(String message);
+void handle_occupancy_state_update(String message);
 
 
 void setup() {
@@ -111,6 +113,7 @@ void loop() {
     // Light Status Data
     data.lightIsOn = lightIsOn;
     data.lightManualOverride = lightManualOverride; // This needs to be inferred or sent
+    data.occupancyDetected = occupancyDetected; // New
     data.timerRemainingSeconds = timerRemainingSeconds;
     data.motionTimerDuration = motionTimerDuration;
     data.manualTimerDuration = manualTimerDuration;
@@ -212,8 +215,9 @@ void handle_lights_input(int encoderChange, bool buttonPressed) {
                 client.publish(MQTT_TOPIC_LIGHT_COMMAND, "OFF");
               } else {
                 client.publish(MQTT_TOPIC_LIGHT_COMMAND, "ON");
-              break;
+                lightManualOverride = true; // Set manual override when turned on via UI
               }
+              break; // <--- placed outside the if() condition
             case 1:
               tempMotionTimerDuration = motionTimerDuration;
               currentLightsSubMode = EDIT_MOTION_TIMER;
@@ -273,6 +277,9 @@ void handle_light_state_update(String message) {
         lightOnTime = millis();       // <---- ADDED (Record the timestamp)
     }
     lightIsOn = newLightState;
+    if (!lightIsOn) {
+        lightManualOverride = false; // Clear manual override when light is turned off
+    }
 
     Serial.print("UI Updated: Light state is now ");
     Serial.println(message);
@@ -288,4 +295,13 @@ void handle_manual_timer_state_update(String message) {
 
 void handle_timer_remaining_update(String message) {
     timerRemainingSeconds = message.toInt();
+}
+
+void handle_occupancy_state_update(String message) {
+    message.toUpperCase();
+    bool occupancyState = (message == "ON");
+    occupancyDetected = occupancyState;
+
+    Serial.print("UI Updated: Occupancy state is now ");
+    Serial.println(message);
 }

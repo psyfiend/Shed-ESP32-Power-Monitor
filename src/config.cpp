@@ -22,8 +22,8 @@ const int INA_ALERT_PIN_CH3 = 32; // Load
 
 // SPI Display
 const int SPI_CS_PIN = 5;
-const int SPI_SCK_PIN = 18;
-const int SPI_MOSI_PIN = 23;
+const int SPI_SCK_PIN = 18;     // Also called CLK
+const int SPI_MOSI_PIN = 23;    // Also called SDA
 const int SPI_DC_PIN = 19;
 const int SPI_RST_PIN = 4;
 const int SPI_BLK_PIN = 16; // Optional, can be set to -1 if not used
@@ -77,6 +77,7 @@ const char* MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY = "devices/shed_power_monitor/lo
 // --- Light Control Topics (interacting with Sensor Hub) ---
 const char* MQTT_TOPIC_LIGHT_STATE = "home/shed/light/main/state";
 const char* MQTT_TOPIC_LIGHT_COMMAND = "home/shed/light/main/command";
+const char* MQTT_TOPIC_OCCUPANCY_STATE = "home/shed/binary_sensor/occupancy/state";
 
 // --- Timer Control Topics (interacting with Sensor Hub) ---
 const char* MQTT_TOPIC_MOTION_TIMER_STATE = "home/shed/number/motion_timer/state";

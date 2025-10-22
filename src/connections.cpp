@@ -13,6 +13,7 @@ extern void handle_light_state_update(String message);
 extern void handle_motion_timer_state_update(String message);
 extern void handle_manual_timer_state_update(String message);
 extern void handle_timer_remaining_update(String message);
+extern void handle_occupancy_state_update(String message);
 extern bool is_sensor_online(int channel);
 
 void setup_wifi() {
@@ -60,6 +61,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     handle_manual_timer_state_update(message);
   } else if (String(topic) == MQTT_TOPIC_TIMER_REMAINING_STATE) {
     handle_timer_remaining_update(message);
+  } else if (String(topic) == MQTT_TOPIC_OCCUPANCY_STATE) {
+    handle_occupancy_state_update(message); 
   }
 }
 
@@ -96,6 +99,7 @@ void reconnect() {
     client.subscribe(MQTT_TOPIC_MOTION_TIMER_STATE);
     client.subscribe(MQTT_TOPIC_MANUAL_TIMER_STATE);
     client.subscribe(MQTT_TOPIC_TIMER_REMAINING_STATE);
+    client.subscribe(MQTT_TOPIC_OCCUPANCY_STATE);
     Serial.println("Subscribed to command topics.");
 
     // Publish the discovery message

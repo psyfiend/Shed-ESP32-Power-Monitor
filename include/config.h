@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-static const int DEVICE_DISCOVERY_PAYLOAD_SIZE = 3072; // Size of the JSON payload for MQTT Discovery
+static const int DEVICE_DISCOVERY_PAYLOAD_SIZE = 7168; // Size of the JSON payload for MQTT Discovery
 
 // ESP32 DevKitC
 // I2C
@@ -75,6 +75,7 @@ extern const char* MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;
 // --- Light Control Topics (interacting with Sensor Hub) ---
 extern const char* MQTT_TOPIC_LIGHT_STATE;
 extern const char* MQTT_TOPIC_LIGHT_COMMAND;
+extern const char* MQTT_TOPIC_OCCUPANCY_STATE;  //home/shed/binary_sensor/occupancy/state
 
 // --- Timer Control Topics (interacting with Sensor Hub) ---
 extern const char* MQTT_TOPIC_MOTION_TIMER_STATE;

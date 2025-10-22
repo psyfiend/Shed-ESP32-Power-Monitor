@@ -2,11 +2,10 @@
 #define DISPLAY_MANAGER_H
 
 #include <Arduino.h>
-#include <TFT_eSPI.h>
 
 const int LIGHTS_MENU_ITEM_COUNT = 4;
 
-// --- UI State Enums (The "Shared Contract") ---
+// --- UI State Enums ---
 // By placing these here, both main.cpp and display_manager.cpp can see them.
 enum DisplayMode {
   POWER_MODE_ALL,
@@ -22,11 +21,11 @@ enum LightsSubMode {
   EDIT_MOTION_TIMER, 
   EDIT_MANUAL_TIMER 
 };
-
 enum PowerSubMode { 
   LIVE_POWER, 
   POWER_SUBSCREEN 
 };
+
 
 // --- Data Structure for Display Updates ---
 // This struct bundles all the data needed to draw any screen.
@@ -39,8 +38,7 @@ struct DisplayData {
   // Light Status Data
   bool lightIsOn;
   bool lightManualOverride;
-  bool occupancyDetected;
-  
+
   // Timer data for the progress bar
   unsigned long timerRemainingSeconds;
   unsigned long motionTimerDuration;
