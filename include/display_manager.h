@@ -13,14 +13,10 @@ enum DisplayMode {
   POWER_MODE_CH1,
   POWER_MODE_CH2,
   POWER_MODE_CH3,
-  LIGHTS_MODE
-};
-
-enum LightsSubMode { 
-  LIVE_STATUS, 
-  LIGHTS_MENU, 
-  EDIT_MOTION_TIMER, 
-  EDIT_MANUAL_TIMER 
+  SENSORS_MODE,
+  LIGHTS_MENU,
+  EDIT_MOTION_TIMER,
+  EDIT_MANUAL_TIMER
 };
 
 enum PowerSubMode { 
@@ -40,6 +36,13 @@ struct DisplayData {
   bool lightIsOn;
   bool lightManualOverride;
   bool occupancyDetected;
+
+  // Sensor Data
+  float temperature;
+  float humidity;
+  float lux;
+  float rainDetect;
+  float rainGauge;
   
   // Timer data for the progress bar
   unsigned long timerRemainingSeconds;
@@ -51,6 +54,7 @@ struct DisplayData {
   int lightsMenuSelection;
   unsigned long tempMotionTimerDuration;
   unsigned long tempManualTimerDuration;
+  DisplayMode currentMode; // Add this so the edit screen knows which timer to show
 };
 
 
@@ -60,7 +64,7 @@ struct DisplayData {
 void setup_display();
 
 // This is the single, high-level function that main.cpp will call to handle all drawing.
-void update_display(DisplayMode mode, LightsSubMode lightsSub, PowerSubMode powerSub, const DisplayData& data);
+void update_display(DisplayMode mode, PowerSubMode powerSub, const DisplayData& data);
 
 
 #endif // DISPLAY_MANAGER_H

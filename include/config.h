@@ -44,6 +44,7 @@ extern const char* MQTT_USER;
 extern const char* MQTT_PASSWORD;
 extern const char* DEVICE_ID;
 
+
 // --- Power Monitor ---
 extern const uint8_t INA226_CH1_ADDRESS;
 extern const uint8_t INA226_CH2_ADDRESS;
@@ -60,6 +61,7 @@ extern const unsigned long INACTIVITY_TIMEOUT;
 extern const int DISPLAY_UPDATE_INTERVAL;
 
 // --- Grand Unified MQTT Topics ---
+// This new structure follows the home/[location]/[domain]/[object_id]/[message_type] pattern.
 
 // --- Base Topics for Discovery Payloads ---
 extern const char* MQTT_BASE_TOPIC_LIGHT;
@@ -71,6 +73,11 @@ extern const char* MQTT_TOPIC_DEVICE_AVAILABILITY;
 extern const char* MQTT_TOPIC_PANEL_SENSOR_AVAILABILITY;
 extern const char* MQTT_TOPIC_BATTERY_SENSOR_AVAILABILITY;
 extern const char* MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;
+
+// --- Sensor Hub Sensor Topics (Published by Sensor Hub) ---
+extern const char* MQTT_TOPIC_TEMPERATURE_SHED_STATE;
+extern const char* MQTT_TOPIC_HUMIDITY_SHED_STATE;
+extern const char* MQTT_TOPIC_LUX_SHED_STATE;
 
 // --- Light Control Topics (interacting with Sensor Hub) ---
 extern const char* MQTT_TOPIC_LIGHT_STATE;
