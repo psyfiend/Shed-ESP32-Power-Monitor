@@ -77,6 +77,7 @@ const char* MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY = "devices/shed_power_monitor/lo
 // --- Sensor Hub Sensor Topics (Published by Sensor Hub) ---
 const char* MQTT_TOPIC_TEMPERATURE_SHED_STATE = "home/shed/sensor/temperature/state";
 const char* MQTT_TOPIC_HUMIDITY_SHED_STATE = "home/shed/sensor/humidity/state";
+const char* MQTT_TOPIC_PRESSURE_SHED_STATE = "home/shed/sensor/pressure/state";
 const char* MQTT_TOPIC_LUX_SHED_STATE = "home/shed/sensor/lux/state";
 
 // --- Light Control Topics (interacting with Sensor Hub) ---

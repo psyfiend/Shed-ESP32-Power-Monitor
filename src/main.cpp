@@ -33,6 +33,7 @@ unsigned long lightOnTime = 0;
 // Sensor Data Variables
 float temperatureShed = 0.0;
 float humidityShed = 0.0;
+float pressureShed = 0.0;
 float luxShed = 0.0;
 
 // --- Temporary variables for editing timers ---
@@ -55,9 +56,11 @@ void handle_timer_remaining_update(String message);
 void handle_motion_timer_state_update(String message);
 void handle_manual_timer_state_update(String message);
 void handle_occupancy_state_update(String message);
+
 // --- Sensor State Update Handlers (for UI) ---
 void handle_temperature_update(String message);
 void handle_humidity_update(String message);
+void handle_pressure_update(String message);
 void handle_lux_update(String message);
 
 void setup() {
@@ -124,6 +127,7 @@ void loop() {
     // Sensor Data
     data.temperature = temperatureShed;
     data.humidity = humidityShed;
+    data.barometricPressure = pressureShed;
     data.lux = luxShed;
     // Menu/UI State Data
     data.lightsMenuSelection = lightsMenuSelection;
@@ -301,6 +305,10 @@ void handle_temperature_update(String message) {
 
 void handle_humidity_update(String message) {
     humidityShed = message.toFloat();
+}
+
+void handle_pressure_update(String message) {
+    pressureShed = message.toFloat();
 }
 
 void handle_lux_update(String message) {

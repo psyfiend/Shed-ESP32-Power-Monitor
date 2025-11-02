@@ -77,6 +77,7 @@ extern const char* MQTT_TOPIC_LOAD_SENSOR_AVAILABILITY;
 // --- Sensor Hub Sensor Topics (Published by Sensor Hub) ---
 extern const char* MQTT_TOPIC_TEMPERATURE_SHED_STATE;
 extern const char* MQTT_TOPIC_HUMIDITY_SHED_STATE;
+extern const char* MQTT_TOPIC_PRESSURE_SHED_STATE;
 extern const char* MQTT_TOPIC_LUX_SHED_STATE;
 
 // --- Light Control Topics (interacting with Sensor Hub) ---

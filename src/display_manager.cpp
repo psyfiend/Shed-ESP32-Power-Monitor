@@ -17,7 +17,7 @@ TFT_eSPI tft = TFT_eSPI();
 #define SENSOR_COLOR TFT_ORANGE // New color for sensor screen
 #define TEXT_COLOR TFT_WHITE
 #define SHADOW_COLOR TFT_BLACK
-#define SUBTLE_TEXT_COLOR 0x632C // Medium Grey
+#define SUBTLE_TEXT_COLOR 0x8C51 // Brighter
 #define SENSOR_THERM_COLOR 0xF800 // Red for thermometer
 #define SENSOR_CLOUD_COLOR 0x3498 // Blue for cloud
 
@@ -28,26 +28,25 @@ TFT_eSPI tft = TFT_eSPI();
 #define FOOTER_HEIGHT 40
 
 // --- Forward Declarations for private drawing functions ---
-// Main Screens
+// --- UPDATED: No more modeChanged flag needed ---
 void draw_power_overview_screen(const DisplayData& data);
 void draw_power_channel_screen(int channel, const DisplayData& data); 
-void draw_sensors_screen(const DisplayData& data); // NEW
+void draw_sensors_screen(const DisplayData& data); 
 
 // Full-screen "Popup" Menus
 void draw_lights_menu_screen(const DisplayData& data);
-void draw_lights_edit_timer_screen(const DisplayData& data); // Simplified
+void draw_lights_edit_timer_screen(const DisplayData& data); 
 
 // Global Footer
-void draw_global_footer_bar(const DisplayData& data); // NEW
+void draw_global_footer_bar(const DisplayData& data); 
 
-// New MDI-style Icons
+// Icons...
 void draw_footer_light_icon(TFT_eSprite* spr, int x, int y, bool on);
 void draw_footer_occupancy_icon(TFT_eSprite* spr, int x, int y, bool detected);
 void draw_temperature_icon(TFT_eSprite* spr, int x, int y);
 void draw_humidity_icon(TFT_eSprite* spr, int x, int y);
 void draw_lux_icon(TFT_eSprite* spr, int x, int y);
-
-// Re-used Icons
+void draw_pressure_icon(TFT_eSprite* spr, int x, int y); 
 void draw_sun_icon(TFT_eSprite* spr, int x, int y);
 void draw_battery_icon(TFT_eSprite* spr, int x, int y, float voltage);
 void draw_load_icon(TFT_eSprite* spr, int x, int y);
@@ -69,34 +68,29 @@ void setup_display() {
   analogWrite(SPI_BLK_PIN, 255);
 }
 
-// UPDATED: Signature changed, LightsSubMode is removed
+// --- UPDATED: Signature back to original ---
 void update_display(DisplayMode mode, PowerSubMode powerSub, const DisplayData& data) {
-  
-  // The logic is now split:
-  // 1. Draw the main content (which takes 0-239px)
-  // 2. Draw the global footer (which takes 240-280px)
-  // OR draw a full-screen menu
   
   switch (mode) {
     case POWER_MODE_ALL:
       draw_power_overview_screen(data);
-      draw_global_footer_bar(data); // Draw footer
+      draw_global_footer_bar(data); // Footer updates every time
       break;
     case POWER_MODE_CH1:
       draw_power_channel_screen(1, data);
-      draw_global_footer_bar(data); // Draw footer
+      draw_global_footer_bar(data); 
       break;
     case POWER_MODE_CH2:
       draw_power_channel_screen(2, data);
-      draw_global_footer_bar(data); // Draw footer
+      draw_global_footer_bar(data); 
       break;
     case POWER_MODE_CH3:
       draw_power_channel_screen(3, data);
-      draw_global_footer_bar(data); // Draw footer
+      draw_global_footer_bar(data); 
       break;
-    case SENSORS_MODE: // NEW
+    case SENSORS_MODE: 
       draw_sensors_screen(data);
-      draw_global_footer_bar(data); // Draw footer
+      draw_global_footer_bar(data); 
       break;
     
     // --- Menu screens are full-screen and do NOT draw the footer ---
@@ -105,12 +99,11 @@ void update_display(DisplayMode mode, PowerSubMode powerSub, const DisplayData& 
       break;
     case EDIT_MOTION_TIMER:
     case EDIT_MANUAL_TIMER:
-      draw_lights_edit_timer_screen(data); // Simplified
+      draw_lights_edit_timer_screen(data); 
       break;
       
     default:
-      // Placeholder for other screens
-      tft.fillScreen(BG_COLOR); // Clear screen for default case
+      tft.fillScreen(BG_COLOR); 
       tft.setCursor(10, 20);
       tft.setTextColor(TFT_WHITE, BG_COLOR);
       tft.setTextSize(2);
@@ -121,92 +114,95 @@ void update_display(DisplayMode mode, PowerSubMode powerSub, const DisplayData& 
 
 // --- Screen Drawing Functions ---
 
+// --- UPDATED: Using full-width sprites to kill ghosting & flicker ---
 void draw_power_overview_screen(const DisplayData& data) {
   char val_buf[20]; 
-  
-  // --- FIX: Clear gaps instead of whole screen to prevent flicker ---
-  tft.fillRect(0, 0, 240, 5, BG_COLOR); // Top gap
-  tft.fillRect(0, 80, 240, 5, BG_COLOR); // Gap 1 (Card 1 Y=5, H=75 -> 80)
-  tft.fillRect(0, 160, 240, 5, BG_COLOR); // Gap 2 (Card 2 Y=85, H=75 -> 160)
-  tft.fillRect(0, 5, 5, 235, BG_COLOR); // Left gap
-  tft.fillRect(235, 5, 5, 235, BG_COLOR); // Right gap
-  
-  // Create a reusable sprite for the cards. 
-  // NEW SIZING: 75px tall to fit 3 + gaps in 240px
+
   TFT_eSprite card_spr = TFT_eSprite(&tft);
+  
+  // Card dimensions
   int card_height = 75;
   int card_width = 230;
   int card_y_gap = 5;
   int card_y = 5; // Start Y-pos
+  int card_x = 5;
 
-  // --- 1. Solar Card ---
-  card_spr.createSprite(card_width, card_height);
-  card_spr.fillRoundRect(0, 0, card_width, card_height, 10, CARD_COLOR); 
-  draw_sun_icon(&card_spr, 15, 15); // Adjusted Y
-  // Power (Large Font)
+  // --- 1. Solar Card Sprite (Full-width band) ---
+  // This sprite is 80px tall (5px gap + 75px card)
+  card_spr.createSprite(240, 80); 
+  card_spr.fillRect(0, 0, 240, 80, BG_COLOR); // Clear gap and bg
+  card_spr.fillRoundRect(card_x, 0, card_width, card_height, 10, CARD_COLOR); // Draw card at local Y=0
+  
+  draw_sun_icon(&card_spr, card_x + 15, 15); 
+  
   card_spr.setTextDatum(TR_DATUM); 
   card_spr.setTextColor(SOLAR_COLOR, CARD_COLOR);
   card_spr.setTextSize(4);
   sprintf(val_buf, "%.1fW", data.power[0] / 1000.0);
-  card_spr.drawString(val_buf, 215, 10); // Adjusted Y
-  // Voltage & Current (Small Font)
+  card_spr.drawString(val_buf, card_x + 215, 10); 
+  
   card_spr.setTextSize(2);
   card_spr.setTextColor(TEXT_COLOR, CARD_COLOR);
   sprintf(val_buf, "%.2fV", data.busVoltage[0]);
-  card_spr.drawString(val_buf, 215, 45); // Adjusted Y
+  card_spr.drawString(val_buf, card_x + 215, 45); 
   sprintf(val_buf, "%s", format_large_number(data.current[0]));
-  card_spr.drawString(val_buf, 145, 45); // Adjusted Y
-  // Push the finished sprite to the screen
-  card_spr.pushSprite(5, card_y);
+  card_spr.drawString(val_buf, card_x + 145, 45); 
+  
+  card_spr.pushSprite(0, card_y); // Push sprite to screen Y=5
   card_spr.deleteSprite(); 
 
-  // --- 2. Battery Card ---
+  // --- 2. Battery Card Sprite (Full-width band) ---
   card_y += card_height + card_y_gap; // New Y-pos (85)
-  card_spr.createSprite(card_width, card_height);
-  card_spr.fillRoundRect(0, 0, card_width, card_height, 10, CARD_COLOR);
-  draw_battery_icon(&card_spr, 15, 15, data.busVoltage[1]); // Adjusted Y
+  // This sprite is 80px tall (5px gap + 75px card)
+  card_spr.createSprite(240, 80); 
+  card_spr.fillRect(0, 0, 240, 80, BG_COLOR); // Clear gap and bg
+  card_spr.fillRoundRect(card_x, 0, card_width, card_height, 10, CARD_COLOR); // Draw card at local Y=0
+
+  draw_battery_icon(&card_spr, card_x + 15, 15, data.busVoltage[1]); 
   
-  // Voltage (Large Font)
   card_spr.setTextDatum(TR_DATUM);
   card_spr.setTextColor(BATTERY_COLOR, CARD_COLOR);
   card_spr.setTextSize(4);
   sprintf(val_buf, "%.2fV", data.busVoltage[1]);
-  card_spr.drawString(val_buf, 215, 10); // Adjusted Y
-  // Power & Current (Small Font)
+  card_spr.drawString(val_buf, card_x + 215, 10); 
+  
   card_spr.setTextSize(2);
   card_spr.setTextColor(TEXT_COLOR, CARD_COLOR);
   sprintf(val_buf, "%+.1fW", data.power[1] / 1000.0); 
-  card_spr.drawString(val_buf, 215, 45); // Adjusted Y
+  card_spr.drawString(val_buf, card_x + 215, 45); 
   sprintf(val_buf, "%s", format_large_number(data.current[1]));
-  card_spr.drawString(val_buf, 145, 45); // Adjusted Y
-  // Push the finished sprite to the screen
-  card_spr.pushSprite(5, card_y);
+  card_spr.drawString(val_buf, card_x + 145, 45); 
+  
+  card_spr.pushSprite(0, card_y); // Push sprite to screen Y=85
   card_spr.deleteSprite();
 
-  // --- 3. Load Card ---
+  // --- 3. Load Card Sprite (Full-width band) ---
   card_y += card_height + card_y_gap; // New Y-pos (165)
-  card_spr.createSprite(card_width, card_height);
-  card_spr.fillRoundRect(0, 0, card_width, card_height, 10, CARD_COLOR);
-  draw_load_icon(&card_spr, 20, 15); // Adjusted Y
+  // This sprite is 75px tall (no bottom gap needed)
+  card_spr.createSprite(240, 75); 
+  card_spr.fillRect(0, 0, 240, 75, BG_COLOR); // Clear gap and bg
+  card_spr.fillRoundRect(card_x, 0, card_width, card_height, 10, CARD_COLOR); // Draw card at local Y=0
+
+  draw_load_icon(&card_spr, card_x + 20, 15); 
   
-  // Current (Large Font)
   card_spr.setTextDatum(TR_DATUM);
   card_spr.setTextColor(LOAD_COLOR, CARD_COLOR);
   card_spr.setTextSize(4);
   sprintf(val_buf, "%s", format_large_number(data.current[2]));
-  card_spr.drawString(val_buf, 215, 10); // Adjusted Y
-  // Power & Voltage (Small Font)
+  card_spr.drawString(val_buf, card_x + 215, 10); 
+  
   card_spr.setTextSize(2);
   card_spr.setTextColor(TEXT_COLOR, CARD_COLOR);
   sprintf(val_buf, "%.1fW", data.power[2] / 1000.0);
-  card_spr.drawString(val_buf, 215, 45); // Adjusted Y
+  card_spr.drawString(val_buf, card_x + 215, 45); 
   sprintf(val_buf, "%.2fV", data.busVoltage[2]);
-  card_spr.drawString(val_buf, 145, 45); // Adjusted Y
-  // Push the finished sprite to the screen
-  card_spr.pushSprite(5, card_y);
+  card_spr.drawString(val_buf, card_x + 145, 45); 
+  
+  card_spr.pushSprite(0, card_y); // Push sprite to screen Y=165
   card_spr.deleteSprite();
 }
 
+// --- UPDATED: Using full-width sprites to kill ghosting & flicker ---
 void draw_power_channel_screen(int channel, const DisplayData& data) {
   char val_buf[20];
   const char* channel_name = "";
@@ -217,47 +213,42 @@ void draw_power_channel_screen(int channel, const DisplayData& data) {
     case 2: channel_name = "BATTERY"; primary_color = BATTERY_COLOR; break;
     case 3: channel_name = "LOAD"; primary_color = LOAD_COLOR; break;
   }
-  
-  // --- Draw Header (Directly) ---
-  tft.fillRect(0, 0, 240, 36, BG_COLOR); // Clear header area
-  tft.setTextDatum(TC_DATUM); 
-  tft.setTextColor(primary_color, BG_COLOR);
-  tft.setTextSize(3); 
-  tft.drawString(channel_name, 120, 5);
-  tft.drawFastHLine(10, 35, 220, CARD_COLOR);
-  
-  // --- Clear gap below header ---
-  tft.fillRect(0, 36, 240, 4, BG_COLOR); // 4px gap
 
-  // --- Sprite 1: Data (V, A, W) ---
-  // Covers Y=40 to Y=139 (100px tall)
+  // --- Sprite 1: Header (Full-width band) ---
+  TFT_eSprite header_spr = TFT_eSprite(&tft);
+  header_spr.createSprite(240, 40); // 40px tall for header + line
+  header_spr.fillRect(0, 0, 240, 40, BG_COLOR);
+
+  header_spr.setTextDatum(TC_DATUM); 
+  header_spr.setTextColor(primary_color, BG_COLOR);
+  header_spr.setTextSize(3); 
+  header_spr.drawString(channel_name, 120, 5);
+  header_spr.drawFastHLine(10, 35, 220, CARD_COLOR);
+
+  header_spr.pushSprite(0, 0);
+  header_spr.deleteSprite();
+  
+  // --- Sprite 2: Data (V, A, W) (Full-width band) ---
   TFT_eSprite data_spr = TFT_eSprite(&tft);
-  data_spr.createSprite(240, 100);
-  data_spr.fillSprite(BG_COLOR); 
+  data_spr.createSprite(240, 100); // 100px tall
+  data_spr.fillRect(0, 0, 240, 100, BG_COLOR); 
 
   data_spr.setTextDatum(TL_DATUM); 
   data_spr.setTextColor(TEXT_COLOR, BG_COLOR);
   data_spr.setTextSize(2);
   
-  // Voltage (Local Y = 0)
   data_spr.drawString("Voltage:", 20, 0);
   data_spr.setTextDatum(TR_DATUM); 
   data_spr.setTextSize(3);
   sprintf(val_buf, "%.2f V", data.busVoltage[channel - 1]);
   data_spr.drawString(val_buf, 220, 0);
 
-  // Current (Local Y = 35)
-  data_spr.setTextDatum(TL_DATUM);
-  data_spr.setTextSize(2);
   data_spr.drawString("Current:", 20, 35);
   data_spr.setTextDatum(TR_DATUM);
   data_spr.setTextSize(3);
   sprintf(val_buf, "%s", format_large_number(data.current[channel - 1]));
   data_spr.drawString(val_buf, 220, 35);
-
-  // Power (Local Y = 70)
-  data_spr.setTextDatum(TL_DATUM);
-  data_spr.setTextSize(2);
+  
   data_spr.drawString("Power:", 20, 70);
   data_spr.setTextDatum(TR_DATUM);
   data_spr.setTextSize(3);
@@ -268,14 +259,13 @@ void draw_power_channel_screen(int channel, const DisplayData& data) {
   }
   data_spr.drawString(val_buf, 220, 70);
 
-  data_spr.pushSprite(0, 40);
+  data_spr.pushSprite(0, 40); // Push at Y=40
   data_spr.deleteSprite(); 
 
-  // --- Sprite 2: Graph Area ---
-  // Covers Y=140 to Y=239 (100px tall)
+  // --- Sprite 3: Graph Area (Full-width band) ---
   TFT_eSprite graph_spr = TFT_eSprite(&tft);
-  graph_spr.createSprite(240, 100);
-  graph_spr.fillSprite(BG_COLOR);
+  graph_spr.createSprite(240, 100); // 100px tall
+  graph_spr.fillRect(0, 0, 240, 100, BG_COLOR);
 
   graph_spr.drawRoundRect(10, 5, 220, 90, 5, CARD_COLOR);
   graph_spr.setTextDatum(MC_DATUM); 
@@ -283,86 +273,106 @@ void draw_power_channel_screen(int channel, const DisplayData& data) {
   graph_spr.setTextColor(SUBTLE_TEXT_COLOR, BG_COLOR);
   graph_spr.drawString("[ Future Graph Area ]", 120, 50); 
   
-  graph_spr.pushSprite(0, 140);
+  graph_spr.pushSprite(0, 140); // Push at Y=140
   graph_spr.deleteSprite(); 
 }
 
-// --- NEW SENSOR SCREEN ---
+// --- UPDATED: Using full-width sprites to kill ghosting & flicker ---
 void draw_sensors_screen(const DisplayData& data) {
   char val_buf[20];
   
-  // --- Draw Header (Directly) ---
-  tft.fillRect(0, 0, 240, 36, BG_COLOR); // Clear header area
-  tft.setTextDatum(TC_DATUM); 
-  tft.setTextColor(SENSOR_COLOR, BG_COLOR);
-  tft.setTextSize(3); 
-  tft.drawString("SENSORS", 120, 5);
-  tft.drawFastHLine(10, 35, 220, CARD_COLOR);
+  // --- Sprite 1: Header (Full-width band) ---
+  TFT_eSprite header_spr = TFT_eSprite(&tft);
+  header_spr.createSprite(240, 40); // 40px tall for header + line
+  header_spr.fillRect(0, 0, 240, 40, BG_COLOR); 
   
-  // --- FIX: Clear gaps instead of whole screen ---
-  tft.fillRect(0, 36, 240, 9, BG_COLOR); // Gap 1 (45-36=9)
-  tft.fillRect(0, 105, 240, 5, BG_COLOR); // Gap 2 (110-105=5)
-  tft.fillRect(0, 170, 240, 5, BG_COLOR); // Gap 3 (175-170=5)
-  tft.fillRect(0, 235, 240, 5, BG_COLOR); // Bottom gap (240-235=5)
-  tft.fillRect(0, 45, 5, 195, BG_COLOR); // Left gap
-  tft.fillRect(235, 45, 5, 195, BG_COLOR); // Right gap
+  header_spr.setTextDatum(TC_DATUM); 
+  header_spr.setTextColor(SENSOR_COLOR, BG_COLOR);
+  header_spr.setTextSize(3); 
+  header_spr.drawString("SENSORS", 120, 5);
+  header_spr.drawFastHLine(10, 35, 220, CARD_COLOR);
 
+  header_spr.pushSprite(0, 0);
+  header_spr.deleteSprite();
 
   // Create a reusable sprite for the sensor cards
   TFT_eSprite card_spr = TFT_eSprite(&tft);
-  int card_height = 60;
+  int card_height = 44;
   int card_width = 230;
-  int card_y_gap = 5; // FIX: Was 10, too large
+  int card_y_gap = 5; 
   int card_y = 45; // Start Y-pos
+  int card_x = 5;
 
-  // --- 1. Temperature Card ---
-  card_spr.createSprite(card_width, card_height);
-  card_spr.fillRoundRect(0, 0, card_width, card_height, 10, CARD_COLOR); 
-  draw_temperature_icon(&card_spr, 15, 10); // (x, y)
+  // --- 1. Temperature Card (Full-width band) ---
+  // This sprite is 49px tall (5px gap + 44px card)
+  card_spr.createSprite(240, 49);
+  card_spr.fillRect(0, 0, 240, 49, BG_COLOR); // Clear gap and bg
+  card_spr.fillRoundRect(card_x, 5, card_width, card_height, 10, CARD_COLOR); // Draw card at local Y=5
+  
+  draw_temperature_icon(&card_spr, card_x + 15, 5); // Nudged up
   
   card_spr.setTextDatum(TR_DATUM); 
   card_spr.setTextColor(SENSOR_COLOR, CARD_COLOR);
-  card_spr.setTextSize(4);
-  sprintf(val_buf, "%.1f C", data.temperature); // Celsius
-  card_spr.drawString(val_buf, 215, 15);
+  card_spr.setTextSize(3);
+  sprintf(val_buf, "%.1f F", data.temperature); // Fahrenheit
+  card_spr.drawString(val_buf, card_x + 215, 15); // Local Y = 10 + 5
   
-  card_spr.pushSprite(5, card_y);
+  card_spr.pushSprite(0, 40); // Push sprite to screen Y=40
   card_spr.deleteSprite();
 
-  // --- 2. Humidity Card ---
-  card_y += card_height + card_y_gap; // New Y-pos (110)
-  card_spr.createSprite(card_width, card_height);
-  card_spr.fillRoundRect(0, 0, card_width, card_height, 10, CARD_COLOR); 
-  draw_humidity_icon(&card_spr, 15, 10);
+  // --- 2. Humidity Card (Full-width band) ---
+  card_y = 40 + 49; // New Y-pos (89)
+  // This sprite is 49px tall (5px gap + 44px card)
+  card_spr.createSprite(240, 49);
+  card_spr.fillRect(0, 0, 240, 49, BG_COLOR); // Clear gap and bg
+  card_spr.fillRoundRect(card_x, 5, card_width, card_height, 10, CARD_COLOR); // Draw card at local Y=5
+ 
+  draw_humidity_icon(&card_spr, card_x + 15, 7); // Nudged up 
   
   card_spr.setTextDatum(TR_DATUM); 
   card_spr.setTextColor(SENSOR_COLOR, CARD_COLOR);
-  card_spr.setTextSize(4);
+  card_spr.setTextSize(3);
   sprintf(val_buf, "%.0f %%", data.humidity); // Percent
-  card_spr.drawString(val_buf, 215, 15);
+  card_spr.drawString(val_buf, card_x + 215, 15); // Local Y = 10 + 5
   
-  card_spr.pushSprite(5, card_y);
+  card_spr.pushSprite(0, card_y); // Push sprite to screen Y=89
   card_spr.deleteSprite();
 
-  // --- 3. Lux Card ---
-  card_y += card_height + card_y_gap; // New Y-pos (175)
-  card_spr.createSprite(card_width, card_height);
-  card_spr.fillRoundRect(0, 0, card_width, card_height, 10, CARD_COLOR); 
-  draw_lux_icon(&card_spr, 15, 10);
+  // --- 3. Lux Card (Full-width band) ---
+  card_y += 49; // New Y-pos (138)
+  card_spr.createSprite(240, 49);
+  card_spr.fillRect(0, 0, 240, 49, BG_COLOR); // Clear gap and bg
+  card_spr.fillRoundRect(card_x, 5, card_width, card_height, 10, CARD_COLOR); // Draw card at local Y=5
+  
+  draw_lux_icon(&card_spr, card_x + 15, 7); // Nudged up
   
   card_spr.setTextDatum(TR_DATUM); 
   card_spr.setTextColor(SENSOR_COLOR, CARD_COLOR);
-  card_spr.setTextSize(4);
+  card_spr.setTextSize(3);
   sprintf(val_buf, "%.0f lx", data.lux); // Lux
-  card_spr.drawString(val_buf, 215, 15);
+  card_spr.drawString(val_buf, card_x + 215, 15); // Local Y = 10 + 5
   
-  card_spr.pushSprite(5, card_y);
+  card_spr.pushSprite(0, card_y); // Push sprite to screen Y=138
+  card_spr.deleteSprite();
+
+  // --- 4. Pressure Card (Full-width band) ---
+  card_y += 49; // New Y-pos (187)
+  // This sprite is 53px tall (5px gap + 44px card + 4px bottom gap)
+  card_spr.createSprite(240, 53);
+  card_spr.fillRect(0, 0, 240, 53, BG_COLOR); // Clear gap and bg
+  card_spr.fillRoundRect(card_x, 5, card_width, card_height, 10, CARD_COLOR); // Draw card at local Y=5
+  
+  draw_pressure_icon(&card_spr, card_x + 15, 7); // Nudged up
+  
+  card_spr.setTextDatum(TR_DATUM); 
+  card_spr.setTextColor(SENSOR_COLOR, CARD_COLOR);
+  card_spr.setTextSize(3);
+  sprintf(val_buf, "%.0f hPa", data.barometricPressure); 
+  card_spr.drawString(val_buf, card_x + 215, 15); // Local Y = 10 + 5
+  
+  card_spr.pushSprite(0, card_y); // Push sprite to screen Y=187
   card_spr.deleteSprite();
 }
-
-
-// --- DELETED: draw_lights_live_status_screen() ---
-// This is now replaced by the global footer bar
 
 
 // <--- Lights menu screen (Full Screen) --->
@@ -379,18 +389,15 @@ void draw_lights_menu_screen(const DisplayData& data) {
   tft.setTextSize(3);
   tft.drawString("LIGHTS MENU", 120, 5);
   tft.drawFastHLine(10, 35, 220, CARD_COLOR);
-
-  // --- FIX: Split 240x240 sprite into two smaller ones ---
   
   // --- Sprite 1: Menu Items 0 & 1 ---
   TFT_eSprite item_spr_1 = TFT_eSprite(&tft);
-  item_spr_1.createSprite(240, 120); // Covers Y=40 to Y=159
-  item_spr_1.fillSprite(BG_COLOR); 
+  item_spr_1.createSprite(240, 120); 
+  item_spr_1.fillRect(0, 0, 240, 120, BG_COLOR); 
 
   item_spr_1.setTextDatum(TL_DATUM);
   item_spr_1.setTextSize(2);
   for (int i = 0; i < 2; i++) {
-    // Local Y = (60 + i * 40) - 40 = 20 + i * 40
     int yPos = 20 + i * 40; 
     if (i == data.lightsMenuSelection) {
       item_spr_1.fillRoundRect(20, yPos - 10, 200, 35, 5, LOAD_COLOR);
@@ -401,18 +408,17 @@ void draw_lights_menu_screen(const DisplayData& data) {
       item_spr_1.drawString(menuItems[i], 30, yPos);
     }
   }
-  item_spr_1.pushSprite(0, 40);
+  item_spr_1.pushSprite(0, 40); // No transparency needed
   item_spr_1.deleteSprite(); 
 
   // --- Sprite 2: Menu Items 2 & 3 ---
   TFT_eSprite item_spr_2 = TFT_eSprite(&tft);
-  item_spr_2.createSprite(240, 120); // Covers Y=160 to Y=279
-  item_spr_2.fillSprite(BG_COLOR); 
+  item_spr_2.createSprite(240, 120); 
+  item_spr_2.fillRect(0, 0, 240, 120, BG_COLOR); 
 
   item_spr_2.setTextDatum(TL_DATUM);
   item_spr_2.setTextSize(2);
   for (int i = 2; i < 4; i++) {
-    // Local Y = (60 + i * 40) - 160 = 20 + (i-2) * 40
     int yPos = 20 + (i-2) * 40; 
     if (i == data.lightsMenuSelection) {
       item_spr_2.fillRoundRect(20, yPos - 10, 200, 35, 5, LOAD_COLOR);
@@ -423,7 +429,7 @@ void draw_lights_menu_screen(const DisplayData& data) {
       item_spr_2.drawString(menuItems[i], 30, yPos);
     }
   }
-  item_spr_2.pushSprite(0, 160);
+  item_spr_2.pushSprite(0, 160); // No transparency needed
   item_spr_2.deleteSprite(); 
 }
 
@@ -436,7 +442,6 @@ void draw_lights_edit_timer_screen(const DisplayData& data) {
   unsigned long durationToEdit;
   const char* title;
 
-  // We have to check the *main* mode to know which timer to edit
   if (data.currentMode == EDIT_MOTION_TIMER) {
       durationToEdit = data.tempMotionTimerDuration;
       title = "Edit Motion Timer";
@@ -454,8 +459,8 @@ void draw_lights_edit_timer_screen(const DisplayData& data) {
 
   // --- Create sprite for the body ---
   TFT_eSprite body_spr = TFT_eSprite(&tft);
-  body_spr.createSprite(240, 244); // 280 - 36 = 244
-  body_spr.fillSprite(BG_COLOR); // Clear sprite
+  body_spr.createSprite(240, 244); 
+  body_spr.fillRect(0, 0, 240, 244, BG_COLOR); 
 
   // --- Display Time Value (to sprite) ---
   body_spr.setTextDatum(MC_DATUM);
@@ -464,14 +469,12 @@ void draw_lights_edit_timer_screen(const DisplayData& data) {
   unsigned long minutes = durationToEdit / 60000;
   unsigned long seconds = (durationToEdit % 60000) / 1000;
   sprintf(buf, "%02lu:%02lu", minutes, seconds);
-  // Local Y = 130 - 36 = 94
   body_spr.drawString(buf, 120, 94);
 
   // --- Footer instructions (to sprite) ---
   body_spr.setTextDatum(BC_DATUM);
   body_spr.setTextSize(1);
   body_spr.setTextColor(SUBTLE_TEXT_COLOR, BG_COLOR);
-  // Local Y = 275 - 36 = 239
   body_spr.drawString("Turn to adjust, Press to save", 120, 239);
   
   body_spr.pushSprite(0, 36);
@@ -483,7 +486,7 @@ void draw_global_footer_bar(const DisplayData& data) {
   // Create a sprite for the footer area
   TFT_eSprite footer_spr = TFT_eSprite(&tft);
   footer_spr.createSprite(240, FOOTER_HEIGHT);
-  footer_spr.fillSprite(BG_COLOR); // Clear sprite
+  footer_spr.fillRect(0, 0, 240, FOOTER_HEIGHT, BG_COLOR); 
 
   // Draw dividing line
   footer_spr.drawFastHLine(0, 0, 240, CARD_COLOR);
@@ -493,6 +496,8 @@ void draw_global_footer_bar(const DisplayData& data) {
   draw_footer_occupancy_icon(&footer_spr, 140, 5, data.occupancyDetected);
 
   // --- Timer Progress Bar (at very bottom) ---
+  footer_spr.fillRect(0, FOOTER_HEIGHT - 4, 240, 4, BG_COLOR); 
+  
   if (data.lightIsOn && data.timerRemainingSeconds > 0) {
     unsigned long totalDurationSec = data.lightManualOverride ? 
                                      (data.manualTimerDuration / 1000) : 
@@ -503,20 +508,18 @@ void draw_global_footer_bar(const DisplayData& data) {
       if (progressWidth < 0) progressWidth = 0;
       if (progressWidth > 240) progressWidth = 240;
       
-      // Draw at local sprite coordinates
       footer_spr.fillRect(0, FOOTER_HEIGHT - 4, progressWidth, 4, LOAD_COLOR);
     }
   }
 
-  // Push the footer sprite to the screen
   footer_spr.pushSprite(0, FOOTER_Y_START);
   footer_spr.deleteSprite();
 }
 
 
 // --- Icon Drawing Functions ---
+// (No changes from here down)
 
-// --- NEW MDI-style Icons ---
 void draw_footer_light_icon(TFT_eSprite* spr, int x, int y, bool on) {
   uint16_t icon_color = on ? SOLAR_COLOR : SUBTLE_TEXT_COLOR;
   
@@ -591,6 +594,46 @@ void draw_lux_icon(TFT_eSprite* spr, int x, int y) {
     spr->drawLine(x1, y1, x2, y2, SOLAR_COLOR);
   }
 }
+
+void draw_pressure_icon(TFT_eSprite* spr, int x, int y) {
+  // mdi:gauge
+  uint16_t body_color = SUBTLE_TEXT_COLOR;
+  uint16_t needle_color = SENSOR_COLOR;
+  uint16_t center_color = SHADOW_COLOR;
+  
+  int cx = x + 20;
+  int cy = y + 20;
+
+  // Draw the gauge body (semi-circle)
+  for (int i = 0; i <= 180; i++) {
+    float angle = (i - 180) * PI / 180.0;
+    spr->drawPixel(cx + 18 * cos(angle), cy + 18 * sin(angle), body_color);
+    spr->drawPixel(cx + 17 * cos(angle), cy + 17 * sin(angle), body_color);
+    spr->drawPixel(cx + 16 * cos(angle), cy + 16 * sin(angle), body_color);
+  }
+  
+  // Draw the base "hump"
+  spr->fillRoundRect(x + 10, y + 30, 20, 10, 3, body_color);
+
+  // Draw Ticks
+  float angle_low = (0 - 160) * PI / 180.0;
+  float angle_high = (0 - 20) * PI / 180.0;
+  spr->drawLine(cx + 12 * cos(angle_low), cy + 12 * sin(angle_low), 
+                cx + 18 * cos(angle_low), cy + 18 * sin(angle_low), body_color);
+  spr->drawLine(cx + 12 * cos(angle_high), cy + 12 * sin(angle_high), 
+                cx + 18 * cos(angle_high), cy + 18 * sin(angle_high), body_color);
+                
+  // Draw Needle (pointing 3/4)
+  float angle_needle = (0 - 45) * PI / 180.0; // ~2:30 position
+  spr->drawLine(cx, cy, 
+                cx + 16 * cos(angle_needle), cy + 16 * sin(angle_needle), needle_color);
+  spr->drawLine(cx+1, cy, 
+                cx + 1 + 16 * cos(angle_needle), cy + 16 * sin(angle_needle), needle_color);
+  
+  // Center hub
+  spr->fillCircle(cx, cy, 3, center_color);
+}
+
 
 // --- Re-used Power Icons ---
 void draw_sun_icon(TFT_eSprite* spr, int x, int y) {

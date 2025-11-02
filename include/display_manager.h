@@ -40,6 +40,7 @@ struct DisplayData {
   // Sensor Data
   float temperature;
   float humidity;
+  float barometricPressure;
   float lux;
   float rainDetect;
   float rainGauge;
