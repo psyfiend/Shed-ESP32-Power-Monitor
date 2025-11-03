@@ -308,16 +308,39 @@ void handle_light_state_update(String message) {
     Serial.println(message);
 }
 
+
+// --- Hardened MQTT Handlers ---
 void handle_motion_timer_state_update(String message) {
-    motionTimerDuration = message.toInt() * 1000;
+    char* endPtr; // Used by strtol to detect errors
+    long newDurationSec = strtol(message.c_str(), &endPtr, 10);
+
+    // Check for conversion errors (*endPtr == '\0' means full conversion)
+    if (*endPtr == '\0' && newDurationSec >= 10 && newDurationSec <= 3600) {
+        motionTimerDuration = newDurationSec * 1000;
+    } else {
+        Serial.printf("Invalid motion timer value: %s\n", message.c_str());
+    }
 }
 
 void handle_manual_timer_state_update(String message) {
-    manualTimerDuration = message.toInt() * 1000;
+    char* endPtr; // Used by strtol to detect errors
+    long newDurationSec = strtol(message.c_str(), &endPtr, 10);
+
+    if (*endPtr == '\0' && newDurationSec >= 10 && newDurationSec <= 3600) {
+        manualTimerDuration = newDurationSec * 1000;
+    } else {
+        Serial.printf("Invalid manual timer value: %s\n", message.c_str());
+    }
 }
 
 void handle_timer_remaining_update(String message) {
-    timerRemainingSeconds = message.toInt();
+    char* endPtr;
+    long newRemainingSec = strtol(message.c_str(), &endPtr, 10);
+    if (*endPtr == '\0' && newRemainingSec >= 0) {
+        timerRemainingSeconds = newRemainingSec;
+    } else {
+        Serial.printf("Invalid timer remaining value: %s\n", message.c_str());
+    } 
 }
 
 void handle_occupancy_state_update(String message) {
@@ -330,17 +353,41 @@ void handle_occupancy_state_update(String message) {
 }
 
 void handle_temperature_update(String message) {
-    temperatureShed = message.toFloat();
+    char* endPtr;
+    float newTemp = strtof(message.c_str(), &endPtr);
+    if (*endPtr == '\0') {
+        temperatureShed = newTemp;
+    } else {
+        Serial.printf("Invalid temperature value: %s\n", message.c_str());
+    }
 }
 
 void handle_humidity_update(String message) {
-    humidityShed = message.toFloat();
+    char* endPtr;
+    float newHumidity = strtof(message.c_str(), &endPtr);
+    if (*endPtr == '\0') {
+        humidityShed = newHumidity;
+    } else {
+        Serial.printf("Invalid humidity value: %s\n", message.c_str());
+    }
 }
 
 void handle_pressure_update(String message) {
-    pressureShed = message.toFloat();
+    char* endPtr;
+    float newPressure = strtof(message.c_str(), &endPtr);
+    if (*endPtr == '\0') {
+        pressureShed = newPressure;
+    } else {
+        Serial.printf("Invalid pressure value: %s\n", message.c_str());
+    }
 }
 
 void handle_lux_update(String message) {
-    luxShed = message.toFloat();
+    char* endPtr;
+    float newLux = strtof(message.c_str(), &endPtr);
+    if (*endPtr == '\0') {
+        luxShed = newLux;
+    } else {
+        Serial.printf("Invalid lux value: %s\n", message.c_str());
+    }
 }
