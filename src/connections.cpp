@@ -33,16 +33,7 @@ void setup_wifi() {
   WiFi.setHostname(DEVICE_ID);
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  
 }
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {

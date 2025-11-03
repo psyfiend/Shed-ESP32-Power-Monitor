@@ -17,14 +17,15 @@ PubSubClient client(espClient);
 
 // --- State Tracking Variables ---
 DisplayMode currentMode = POWER_MODE_ALL;
-
 PowerSubMode currentPowerSubMode = LIVE_POWER;
 
+// --- UI variables ---
 int lightsMenuSelection = 0;
+int lastEncoderValue = 0;
 
 // --- Light State Variables (Synced from Sensor Hub via MQTT) ---
 bool lightIsOn = false;
-bool lightManualOverride = false; // We can infer this from which timer is active
+bool lightManualOverride = false;
 bool occupancyDetected = false;
 unsigned long timerRemainingSeconds = 0;
 unsigned long motionTimerDuration = MOTION_TIMER_DURATION;  // Default, will be updated by MQTT
@@ -40,11 +41,14 @@ float luxShed = 0.0;
 unsigned long tempMotionTimerDuration;
 unsigned long tempManualTimerDuration;
 
+// --- Network State ---
+bool wifiWasConnected = false;
+unsigned long lastNetworkReportTime = 0;
+unsigned long lastMqttReconnectAttempt = 0;
+
 // --- Non-Blocking Timers ---
 unsigned long lastDisplayUpdateTime = 0;
-unsigned long lastMqttReconnectAttempt = 0;
 unsigned long lastUserActivityTime = 0;
-int lastEncoderValue = 0;
 
 // --- Forward Declarations ---
 void handle_input();
@@ -86,17 +90,43 @@ void setup() {
 void loop() {
   loop_ota();
 
-  if (!client.connected()) {
-    long now = millis();
-    if (now - lastMqttReconnectAttempt > 5000) {
-      lastMqttReconnectAttempt = now;
-      reconnect();
+  // --- Non-blocking network management ---
+  if (WiFi.status() != WL_CONNECTED) {
+    // WiFi disconnected
+    if (wifiWasConnected) {
+      Serial.println("WiFi disconnected!");
+      wifiWasConnected = false;
     }
+
+    if (millis() - lastNetworkReportTime > 5000) {
+      Serial.println("WiFi not connected, attempting reconnection...");
+      lastNetworkReportTime = millis();
+    }
+
   } else {
-    client.loop();
+    // WiFi connected
+    if (!wifiWasConnected) {
+      Serial.println("WiFi connected!");
+      Serial.print("IP address: ");
+      Serial.println(WiFi.localIP());
+      wifiWasConnected = true;
+    }
+
+    // MQTT Reconnection
+    if (!client.connected()) {
+      long now = millis();
+      if (now - lastMqttReconnectAttempt > 5000) {
+        Serial.println("MQTT not connected, attempting reconnection...");
+        lastMqttReconnectAttempt = now;
+        reconnect();
+      }
+    } else {
+      // WiFi and MQTT are connected
+      client.loop();
+    }
   }
   
-  handle_input(); // Handle user input
+  handle_input();       // Handle user input
   loop_power_monitor(); // Run core logic for this device
 
   // Inactivity timer to reset the view
@@ -156,13 +186,13 @@ void handle_input() {
 
   if (encoderChange == 0 && !buttonPressed) return; // No input, do nothing
   
-  // --- UPDATED: New simplified state logic ---
+  // --- State logic ---
   switch (currentMode) {
-    case POWER_MODE_ALL:
+    case POWER_MODE_ALL:  // Home screen - Power Overview
     case POWER_MODE_CH1:
     case POWER_MODE_CH2:
     case POWER_MODE_CH3:
-    case SENSORS_MODE: // New screen included in this logic
+    case SENSORS_MODE:    // Sensor information via MQTT
       // Handle knob turning (cycles through main screens)
       if (encoderChange != 0) {
         int modeIndex = (int)currentMode;
@@ -213,11 +243,11 @@ void handle_input() {
               break; 
             case 1:
               tempMotionTimerDuration = motionTimerDuration;
-              currentMode = EDIT_MOTION_TIMER; // Change main mode
+              currentMode = EDIT_MOTION_TIMER; // Modify motion timer
               break;
             case 2:
               tempManualTimerDuration = manualTimerDuration;
-              currentMode = EDIT_MANUAL_TIMER; // Change main mode
+              currentMode = EDIT_MANUAL_TIMER; // Modify manual timer
               break;
             case 3:
               currentMode = POWER_MODE_ALL; // Back to home screen
@@ -266,8 +296,8 @@ void handle_light_state_update(String message) {
     message.toUpperCase();
     bool newLightState = (message == "ON");
 
-    if (newLightState && !lightIsOn) { // <---- UPDATED (If state is changing to ON)
-        lightOnTime = millis();       // <---- ADDED (Record the timestamp)
+    if (newLightState && !lightIsOn) {  // (If state is changing to ON)
+        lightOnTime = millis();         // (Record the timestamp)
     }
     lightIsOn = newLightState;
     if (!lightIsOn) {
